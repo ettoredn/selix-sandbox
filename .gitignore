@@ -1,0 +1,11 @@
+# PHPStorm
+.idea/
+
+# OS X
+.DS_Store
+.AppleDouble/
+._*
+*.bak
+
+# SVN
+.svn/
