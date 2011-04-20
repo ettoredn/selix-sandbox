@@ -9,3 +9,6 @@
 
 # SVN
 .svn/
+
+# Project
+/devnotes.txt
