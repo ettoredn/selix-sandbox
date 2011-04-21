@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Configuration variables
+PHP_MODULES_PATH="/usr/lib/php5/20090626"
 REQUIRED_PACKAGES="php5-fpm apache2-mpm-worker selinux-basics libapache2-mod-fastcgi"
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
@@ -123,3 +124,7 @@ if (( buildfail != 0 ))
 then
 	echo "*** Build of php5-sephp module failed." >&2 && exit 1
 fi
+
+echo -e "\nLoading php5-sephp module ..."
+echo "extension=$cwd/php5-sephp/modules/sephp.so" > "/etc/php5/conf.d/sephp.ini" || exit 1
+/etc/init.d/php5-fpm restart || exit 1
