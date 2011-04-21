@@ -13,6 +13,7 @@ then
 	echo "*** This script needs to be run on Debian Squeeze 6" >&2 && exit 1
 fi
 
+# Check packages
 MISSING_PKGS=0
 echo "Checking required packages.."
 for package in $REQUIRED_PACKAGES
@@ -28,4 +29,11 @@ done
 if (( MISSING_PKGS != 0 ))
 then
 	echo "*** Packages missing. Please install them to continue." >&2 && exit 1
+fi
+
+# Check if SELinux is active
+$( selinuxenabled )
+if (( $? != 0 ))
+then
+	echo "*** SELinux not enabled. Please enable it by running selinux-activate ." >&2 && exit 1
 fi
