@@ -115,9 +115,19 @@ echo -e "\nBuilding php5-sephp module ..."
 cd php5-sephp
 buildfail=0
 
-phpize >/dev/null || buildfail=1
-if (( buildfail != 0 )) ; then ./configure >/dev/null buildfail=1 ; fi
-if (( buildfail != 0 )) ; then make >/dev/null || buildfail=1 ; fi
+if (( buildfail == 0 )) ; then
+	echo -e "\tExecuting phpize ..."
+	phpize >/dev/null || buildfail=1
+fi
+
+if (( buildfail == 0 )) ; then
+	echo -e "\tExecuting configure ..."
+	./configure >/dev/null || buildfail=1
+fi
+if (( buildfail == 0 )) ; then 
+	echo -e "\tExecuting make ..."
+	make >/dev/null || buildfail=1
+fi
 
 cd $cwd
 if (( buildfail != 0 ))
