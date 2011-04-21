@@ -108,3 +108,18 @@ if (( $DISABLE_NGINX == 0 ))
 then
 	echo "*** Nginx not yet implemented!"
 fi
+
+### php5-sephp module ###
+echo -e "\nBuilding php5-sephp module ..."
+cd php5-sephp
+buildfail=0
+
+phpize >/dev/null || buildfail=1
+if (( buildfail != 0 )) ; then ./configure >/dev/null buildfail=1 ; fi
+if (( buildfail != 0 )) ; then make >/dev/null || buildfail=1 ; fi
+
+cd $cwd
+if (( buildfail != 0 ))
+then
+	echo "*** Build of php5-sephp module failed." >&2 && exit 1
+fi
