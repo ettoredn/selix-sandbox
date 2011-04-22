@@ -89,8 +89,8 @@ then
 		echo "*** Some required Apache modules are disabled. Please enable them to continue." >&2 && exit 1
 	fi
 	
-	# Include SePHP mod_fastcgi configuration
-	echo -e "\nAdding mod_fastcgi configuration for php-fpm ..."
+	# Include SePHP configuration
+	echo -e "\nAdding SePHP Apache configuration ..."
 	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || exit 1
 
 	# Disable default Apache virtualhost

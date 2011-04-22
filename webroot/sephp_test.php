@@ -1,21 +1,24 @@
+<pre>
 <?php
-$br = (php_sapi_name() == "cli")? "":"<br>";
 
-if(!extension_loaded('sephp')) {
-	dl('sephp.' . PHP_SHLIB_SUFFIX);
-}
 $module = 'sephp';
 $functions = get_extension_funcs($module);
-echo "Functions available in the test extension:$br\n";
+echo "Functions available in the test extension:\n";
 foreach($functions as $func) {
-    echo $func."$br\n";
+    echo $func."\n";
 }
-echo "$br\n";
+echo "\n";
 $function = 'confirm_' . $module . '_compiled';
 if (extension_loaded($module)) {
 	$str = $function($module);
 } else {
 	$str = "Module $module is not compiled into PHP";
 }
-echo "$str\n";
+
+echo "\n".'$_ENV'."\n";
+var_dump( $_ENV );
+echo "\n".'$_SERVER'."\n";
+var_dump( $_SERVER );
+
 ?>
+</pre>
