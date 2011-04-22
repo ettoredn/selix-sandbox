@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Configuration variables
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
-REQUIRED_PACKAGES="php5-fpm apache2-mpm-worker selinux-basics libapache2-mod-fastcgi"
+REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics "
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
 DISABLE_NGINX=1
@@ -18,7 +18,6 @@ ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 # Evaluate options
 newopts=$( getopt -n$0 -a --longoptions="disable-apache disable-nginx" "h" "$@" ) || usage
 set -- $newopts
-
 while (( $# > 0 ))
 do
     case "$1" in
