@@ -94,7 +94,7 @@ then
 	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || exit 1
 
 	# Disable default Apache virtualhost
-	echo -e "\nDisabling default Apache virtualhost..."
+	echo -e "\nDisabling default Apache virtualhost ..."
 	a2dissite default
 
 	# Copy virtualhost into apache sites and enable it
