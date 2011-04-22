@@ -117,6 +117,7 @@ buildfail=0
 
 if (( buildfail == 0 )) ; then
 	echo -e "\tExecuting phpize ..."
+	phpize --clean >/dev/null || buildfail=1
 	phpize >/dev/null || buildfail=1
 fi
 
