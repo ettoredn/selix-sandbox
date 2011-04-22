@@ -20,7 +20,6 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
  * Every user visible function must have an entry in sephp_functions[].
  */
 const zend_function_entry sephp_functions[] = {
-	PHP_FE(confirm_sephp_compiled,	NULL) /* For testing, remove later */
 	{NULL, NULL, NULL}
 };
 
@@ -32,8 +31,8 @@ zend_module_entry sephp_module_entry = {
 	sephp_functions,
 	PHP_MINIT(sephp),
 	PHP_MSHUTDOWN(sephp),
-	PHP_RINIT(sephp),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(sephp),	/* Replace with NULL if there's nothing to do at request end */
+	PHP_RINIT(sephp),
+	PHP_RSHUTDOWN(sephp),
 	PHP_MINFO(sephp),
 #if ZEND_MODULE_API_NO >= 20010901
 	"0.1", /* Replace with version number for your extension */
@@ -47,13 +46,11 @@ ZEND_GET_MODULE(sephp)
 
 PHP_MINIT_FUNCTION(sephp)
 {	
-
 	return SUCCESS;
 }
 
 PHP_MSHUTDOWN_FUNCTION(sephp)
 {
-
 	return SUCCESS;
 }
 
@@ -61,12 +58,14 @@ PHP_RINIT_FUNCTION(sephp)
 {
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = sephp_php_import_environment_variables;
+	
 	return SUCCESS;
 }
 
 PHP_RSHUTDOWN_FUNCTION(sephp)
 {
 	php_import_environment_variables = old_php_import_environment_variables;
+	
 	return SUCCESS;
 }
 
@@ -75,20 +74,6 @@ PHP_MINFO_FUNCTION(sephp)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "sephp support", "enabled");
 	php_info_print_table_end();
-}
-
-PHP_FUNCTION(confirm_sephp_compiled)
-{
-	char *arg = NULL;
-	int arg_len, len;
-	char *strg;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
-
-	len = spprintf(&strg, 0, "Congratulations! Module %.78s is now loaded into PHP.", arg);
-	RETURN_STRINGL(strg, len, 0);
 }
 
 void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
@@ -137,9 +122,9 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 //  			PHPWRITE( buf, strlen(buf) );
 		}
 	}
-    
+
+	// Don't expose SePHP parameters to scripts through $_SERVER    
     for (i=0; i < SEPHP_PARAMS_COUNT; i++)
  		if (fcgi_values[i])
- 			// Don't expose variables to scripts through $_SERVER
  			zend_hash_del(arr_hash, fcgi_params[i], strlen(fcgi_params[i]) + 1);
 }

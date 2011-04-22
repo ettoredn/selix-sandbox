@@ -7,7 +7,6 @@
 <body><?php
 
 check_extension();
-
 show_environment();
 
 function check_extension()

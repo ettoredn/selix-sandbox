@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Configuration variables
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
-REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics "
+REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics"
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
 DISABLE_NGINX=1

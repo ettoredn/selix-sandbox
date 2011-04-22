@@ -27,8 +27,6 @@ PHP_RINIT_FUNCTION(sephp);
 PHP_RSHUTDOWN_FUNCTION(sephp);
 PHP_MINFO_FUNCTION(sephp);
 
-PHP_FUNCTION(confirm_sephp_compiled); /* For testing, remove later */
-
 /* 
 ZEND_BEGIN_MODULE_GLOBALS(sephp)
 	long  global_value;
