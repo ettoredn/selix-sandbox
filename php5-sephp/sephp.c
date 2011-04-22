@@ -85,9 +85,9 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
     HashPosition pointer;
     int i;
     
-	/* call php's original import as a catch-all */
+    /* call php's original import as a catch-all */
 	old_php_import_environment_variables(array_ptr TSRMLS_CC);
-
+	
     arr_hash = Z_ARRVAL_P(array_ptr);
     for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer); 
     	zend_hash_get_current_data_ex(arr_hash, (void**) &data, &pointer) == SUCCESS; 
@@ -103,7 +103,7 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
      		{
      			if (!strncmp( key, fcgi_params[i], strlen(fcgi_params[i])))
      			{
-     			// TODO handle of other types (int, null, etc)
+     				// TODO handle of other types (int, null, etc)
 					if (Z_TYPE_PP(data) == IS_STRING)
 						fcgi_values[i] = Z_STRVAL_PP(data);
      			}
