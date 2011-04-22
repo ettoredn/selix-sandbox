@@ -1,10 +1,10 @@
 #ifndef PHP_SEPHP_H
 #define PHP_SEPHP_H
 
-#define SEPHP_ENV_PARAMS_COUNT		2
-#define SEPHP_ENV_PARAMS	"SERVER_SIGNATURE", "HTTP_USER_AGENT"
-#define SEPHP_ENV_SELINUX_CONTEXT	0
-#define SEPHP_ENV_SELINUX_TEST		1
+#define SEPHP_PARAMS_COUNT		2
+#define SEPHP_PARAMS	"SERVER_SIGNATURE", "HTTP_USER_AGENT"
+#define SEPHP_PARAM_SELINUX_CONTEXT	0
+#define SEPHP_PARAM_SELINUX_TEST	1
 
 extern zend_module_entry sephp_module_entry;
 #define phpext_sephp_ptr &sephp_module_entry

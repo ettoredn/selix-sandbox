@@ -93,8 +93,8 @@ PHP_FUNCTION(confirm_sephp_compiled)
 
 void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 {
-    char *selinux_keys[SEPHP_ENV_PARAMS_COUNT] = { SEPHP_ENV_PARAMS };
-    char *selinux_values[SEPHP_ENV_PARAMS_COUNT];
+    char *fcgi_params[SEPHP_PARAMS_COUNT] = { SEPHP_PARAMS };
+    char *fcgi_values[SEPHP_PARAMS_COUNT];
     zval **data;
     HashTable *arr_hash;
     HashPosition pointer;
@@ -114,32 +114,32 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 		
     	if (zend_hash_get_current_key_ex(arr_hash, &key, &key_len, &index, 0, &pointer) == HASH_KEY_IS_STRING)
     	{
-     		for (i=0; i < SEPHP_ENV_PARAMS_COUNT; i++)
+     		for (i=0; i < SEPHP_PARAMS_COUNT; i++)
      		{
-     			if (!strncmp( key, selinux_keys[i], strlen(selinux_keys[i])))
+     			if (!strncmp( key, fcgi_params[i], strlen(fcgi_params[i])))
      			{
      			// TODO handle of other types (int, null, etc)
 					if (Z_TYPE_PP(data) == IS_STRING)
-						selinux_values[i] = Z_STRVAL_PP(data);
+						fcgi_values[i] = Z_STRVAL_PP(data);
      			}
      		}
     	}
     }
     
     // TODO selinux stuff (set context, etc)
-    for (i=0; i < SEPHP_ENV_PARAMS_COUNT; i++)
+    for (i=0; i < SEPHP_PARAMS_COUNT; i++)
     {
- 		if (selinux_values[i])
+ 		if (fcgi_values[i])
  		{
  			char buf[500];
  			memset( buf, 0, sizeof(buf) );
- 			sprintf( buf, "SELINUX %s => %s <br>", selinux_keys[i], selinux_values[i] );
+ 			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
  			PHPWRITE( buf, strlen(buf) );
 		}
 	}
     
-    for (i=0; i < SEPHP_ENV_PARAMS_COUNT; i++)
- 		if (selinux_values[i])
+    for (i=0; i < SEPHP_PARAMS_COUNT; i++)
+ 		if (fcgi_values[i])
  			// Don't expose variables to scripts through $_SERVER
- 			zend_hash_del(arr_hash, selinux_keys[i], strlen(selinux_keys[i]) + 1);
+ 			zend_hash_del(arr_hash, fcgi_params[i], strlen(fcgi_params[i]) + 1);
 }
