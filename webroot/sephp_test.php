@@ -1,24 +1,31 @@
-<pre>
-<?php
+<html><head>
+<style type="text/css">
+	body { font-family: Calibri; margin: 10px 6px; }
+	.red { color: red; }
+	.title { background-color: #DAD8D8; text-align: center; }
+</style></head>
+<body><?php
 
-$module = 'sephp';
-$functions = get_extension_funcs($module);
-echo "Functions available in the test extension:\n";
-foreach($functions as $func) {
-    echo $func."\n";
+check_extension();
+
+show_environment();
+
+function check_extension()
+{
+	if (extension_loaded("sephp"))
+		echo "<p>[ OK ] SePHP extension loaded</p>";
+	else
+		die("<p class='red'>[ERROR] SePHP extension not loaded</p>");
 }
-echo "\n";
-$function = 'confirm_' . $module . '_compiled';
-if (extension_loaded($module)) {
-	$str = $function($module);
-} else {
-	$str = "Module $module is not compiled into PHP";
+
+function show_environment()
+{
+	echo '<p class="title">$_SERVER</p><pre>';
+	var_dump( $_SERVER );
+	echo '</pre>';
+	echo '<p class="title">$_ENV</p><pre>';
+	var_dump( $_ENV );
+	echo '</pre>';
 }
-
-echo "\n".'$_ENV'."\n";
-var_dump( $_ENV );
-echo "\n".'$_SERVER'."\n";
-var_dump( $_SERVER );
-
-?>
-</pre>
+?></body>
+</html>

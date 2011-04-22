@@ -131,10 +131,10 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
     {
  		if (fcgi_values[i])
  		{
- 			char buf[500];
- 			memset( buf, 0, sizeof(buf) );
- 			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
- 			PHPWRITE( buf, strlen(buf) );
+//  			char buf[500];
+//  			memset( buf, 0, sizeof(buf) );
+//  			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
+//  			PHPWRITE( buf, strlen(buf) );
 		}
 	}
     
