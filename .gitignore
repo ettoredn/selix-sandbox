@@ -19,6 +19,8 @@ php5-selinux/aclocal.m4
 php5-selinux/autom4te.cache/
 php5-selinux/build/
 php5-selinux/config*
+!php5-selinux/config.m4
+!php5-selinux/config.w32
 php5-selinux/install-sh
 php5-selinux/libtool
 php5-selinux/ltmain.sh
