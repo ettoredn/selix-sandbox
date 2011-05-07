@@ -6,80 +6,80 @@
 #include "php_variables.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
-#include "php_sephp.h"
+#include "php_selinux.h"
 
-/* If you declare any globals in php_sephp.h uncomment this:
-ZEND_DECLARE_MODULE_GLOBALS(sephp)
+/* If you declare any globals in php_selinux.h uncomment this:
+ZEND_DECLARE_MODULE_GLOBALS(selinux)
 */
 
-/* We get called by PHP when it import environment variables ( main/php_variables.c:824 ) */
+/* We get called by PHP when it imports environment variables ( main/php_variables.c:824 ) */
 void (*old_php_import_environment_variables)(zval *array_ptr TSRMLS_DC);
-void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
+void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
 
 /*
- * Every user visible function must have an entry in sephp_functions[].
+ * Every user visible function must have an entry in selinux_functions[].
  */
-const zend_function_entry sephp_functions[] = {
+const zend_function_entry selinux_functions[] = {
 	{NULL, NULL, NULL}
 };
 
-zend_module_entry sephp_module_entry = {
+zend_module_entry selinux_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	STANDARD_MODULE_HEADER,
 #endif
-	"sephp",
-	sephp_functions,
-	PHP_MINIT(sephp),
-	PHP_MSHUTDOWN(sephp),
-	PHP_RINIT(sephp),
-	PHP_RSHUTDOWN(sephp),
-	PHP_MINFO(sephp),
+	"selinux",
+	selinux_functions,
+	PHP_MINIT(selinux),
+	PHP_MSHUTDOWN(selinux),
+	PHP_RINIT(selinux),
+	PHP_RSHUTDOWN(selinux),
+	PHP_MINFO(selinux),
 #if ZEND_MODULE_API_NO >= 20010901
 	"0.1", /* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
 
-#ifdef COMPILE_DL_SEPHP
-ZEND_GET_MODULE(sephp)
+#ifdef COMPILE_DL_SELINUX
+ZEND_GET_MODULE(selinux)
 #endif
 
-PHP_MINIT_FUNCTION(sephp)
+PHP_MINIT_FUNCTION(selinux)
 {	
 	return SUCCESS;
 }
 
-PHP_MSHUTDOWN_FUNCTION(sephp)
+PHP_MSHUTDOWN_FUNCTION(selinux)
 {
 	return SUCCESS;
 }
 
-PHP_RINIT_FUNCTION(sephp)
+PHP_RINIT_FUNCTION(selinux)
 {
 	old_php_import_environment_variables = php_import_environment_variables;
-	php_import_environment_variables = sephp_php_import_environment_variables;
+	php_import_environment_variables = selinux_php_import_environment_variables;
 	
 	return SUCCESS;
 }
 
-PHP_RSHUTDOWN_FUNCTION(sephp)
+PHP_RSHUTDOWN_FUNCTION(selinux)
 {
 	php_import_environment_variables = old_php_import_environment_variables;
 	
 	return SUCCESS;
 }
 
-PHP_MINFO_FUNCTION(sephp)
+PHP_MINFO_FUNCTION(selinux)
 {
 	php_info_print_table_start();
-	php_info_print_table_header(2, "sephp support", "enabled");
+	php_info_print_table_header(2, "selinux support", "enabled");
 	php_info_print_table_end();
 }
 
-void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
+void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 {
-	char *fcgi_params[SEPHP_PARAMS_COUNT] = { SEPHP_PARAMS };
-	char *fcgi_values[SEPHP_PARAMS_COUNT];
+	char *fcgi_params[SELINUX_PARAMS_COUNT] = { SELINUX_PARAMS };
+	char *fcgi_values[SELINUX_PARAMS_COUNT];
 	zval **data;
 	HashTable *arr_hash;
 	HashPosition pointer;
@@ -99,7 +99,7 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 		
 		if (zend_hash_get_current_key_ex(arr_hash, &key, &key_len, &index, 0, &pointer) == HASH_KEY_IS_STRING)
 		{
-			for (i=0; i < SEPHP_PARAMS_COUNT; i++)
+			for (i=0; i < SELINUX_PARAMS_COUNT; i++)
 			{
 				if (!strncmp( key, fcgi_params[i], strlen(fcgi_params[i])))
 				{
@@ -112,7 +112,7 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	}
 	 
 	// TODO selinux stuff (set context, etc)
-	for (i=0; i < SEPHP_PARAMS_COUNT; i++)
+	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
 	{
 		if (fcgi_values[i])
 		{
@@ -124,7 +124,7 @@ void sephp_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	}
 
 	// Don't expose SePHP parameters to scripts through $_SERVER	 
-	for (i=0; i < SEPHP_PARAMS_COUNT; i++)
+	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
 		if (fcgi_values[i])
 			zend_hash_del(arr_hash, fcgi_params[i], strlen(fcgi_params[i]) + 1);
 }

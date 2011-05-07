@@ -11,10 +11,10 @@ show_environment();
 
 function check_extension()
 {
-	if (extension_loaded("sephp"))
-		echo "<p>[ OK ] SePHP extension loaded</p>";
+	if (extension_loaded("selinux"))
+		echo "<p>[ OK ] SELinux extension loaded</p>";
 	else
-		die("<p class='red'>[ERROR] SePHP extension not loaded</p>");
+		die("<p class='red'>[ERROR] SELinux extension not loaded</p>");
 }
 
 function show_environment()

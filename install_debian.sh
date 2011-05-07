@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Configuration variables
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
-REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics"
+REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics libselinux1-dev"
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
 DISABLE_NGINX=1
@@ -109,9 +109,9 @@ then
 	echo "*** Nginx not yet implemented!"
 fi
 
-### php5-sephp module ###
-echo -e "\nBuilding php5-sephp module ..."
-cd php5-sephp
+### php5-selinux module ###
+echo -e "\nBuilding php5-selinux module ..."
+cd php5-selinux
 buildfail=0
 
 if (( buildfail == 0 )) ; then
@@ -132,9 +132,9 @@ fi
 cd $cwd
 if (( buildfail != 0 ))
 then
-	echo "*** Build of php5-sephp module failed." >&2 && exit 1
+	echo "*** Build of php5-selinux module failed." >&2 && exit 1
 fi
 
-echo -e "\nLoading php5-sephp module ..."
-echo "extension=$cwd/php5-sephp/modules/sephp.so" > "/etc/php5/conf.d/sephp.ini" || exit 1
+echo -e "\nLoading php5-selinux module ..."
+echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
 /etc/init.d/php5-fpm restart || exit 1

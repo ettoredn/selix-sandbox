@@ -11,20 +11,20 @@
 .svn/
 
 # Project
-php5-sephp/.deps
-php5-sephp/.libs/
-php5-sephp/Makefile*
-php5-sephp/acinclude.m4
-php5-sephp/aclocal.m4
-php5-sephp/autom4te.cache/
-php5-sephp/build/
-php5-sephp/config*
-php5-sephp/install-sh
-php5-sephp/libtool
-php5-sephp/ltmain.sh
-php5-sephp/missing
-php5-sephp/mkinstalldirs
-php5-sephp/modules/
-php5-sephp/run-tests.php
-php5-sephp/sephp.la
-php5-sephp/sephp.lo
+php5-selinux/.deps
+php5-selinux/.libs/
+php5-selinux/Makefile*
+php5-selinux/acinclude.m4
+php5-selinux/aclocal.m4
+php5-selinux/autom4te.cache/
+php5-selinux/build/
+php5-selinux/config*
+php5-selinux/install-sh
+php5-selinux/libtool
+php5-selinux/ltmain.sh
+php5-selinux/missing
+php5-selinux/mkinstalldirs
+php5-selinux/modules/
+php5-selinux/run-tests.php
+php5-selinux/*.la
+php5-selinux/*.lo
