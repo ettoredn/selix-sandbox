@@ -150,7 +150,7 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 			{
 				/*
 				 * Apache mod_fastcgi adds a parameter for every SetEnv <name> <value>
-				 * in the form of "REDIRECT_<name>". It needs to be hidden too.
+				 * in the form of "REDIRECT_<name>". These need to be hidden too.
 				 */
 				int redirect_len = strlen("REDIRECT_") + strlen( SELINUX_G(fcgi_params[i]) ) + 1;
 				char *redirect_param = (char *) emalloc( redirect_len );

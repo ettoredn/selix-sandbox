@@ -44,7 +44,7 @@ PHP_RSHUTDOWN_FUNCTION(selinux);
 PHP_MINFO_FUNCTION(selinux);
 
 ZEND_BEGIN_MODULE_GLOBALS(selinux)
-	char *fcgi_params[SELINUX_PARAMS_COUNT]; // = { SELINUX_PARAMS };
+	char *fcgi_params[SELINUX_PARAMS_COUNT];
 	char *fcgi_values[SELINUX_PARAMS_COUNT];
 ZEND_END_MODULE_GLOBALS(selinux)
 
