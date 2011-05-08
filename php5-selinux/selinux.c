@@ -21,6 +21,7 @@
 
 #include "php.h"
 #include "php_variables.h"
+#include "php_main.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_selinux.h"
@@ -29,9 +30,11 @@
 ZEND_DECLARE_MODULE_GLOBALS(selinux)
 */
 
-/* We get called by PHP when it imports environment variables ( main/php_variables.c:824 ) */
 void (*old_php_import_environment_variables)(zval *array_ptr TSRMLS_DC);
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
+
+void (*old_zend_execute)(zend_op_array *op_array TSRMLS_DC);
+void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC);
 
 /*
  * Every user visible function must have an entry in selinux_functions[].
@@ -62,7 +65,7 @@ ZEND_GET_MODULE(selinux)
 #endif
 
 PHP_MINIT_FUNCTION(selinux)
-{	
+{
 	return SUCCESS;
 }
 
@@ -73,8 +76,13 @@ PHP_MSHUTDOWN_FUNCTION(selinux)
 
 PHP_RINIT_FUNCTION(selinux)
 {
+	/* We get called by PHP when it imports environment variables ( main/php_variables.c:824 ) */
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = selinux_php_import_environment_variables;
+
+	/* Hook zend_execute to execute it in a SELinux context */
+	old_zend_execute = zend_execute;
+	zend_execute = selinux_zend_execute;
 	
 	return SUCCESS;
 }
@@ -82,6 +90,7 @@ PHP_RINIT_FUNCTION(selinux)
 PHP_RSHUTDOWN_FUNCTION(selinux)
 {
 	php_import_environment_variables = old_php_import_environment_variables;
+	zend_execute = old_zend_execute;
 	
 	return SUCCESS;
 }
@@ -89,8 +98,25 @@ PHP_RSHUTDOWN_FUNCTION(selinux)
 PHP_MINFO_FUNCTION(selinux)
 {
 	php_info_print_table_start();
-	php_info_print_table_header(2, "selinux support", "enabled");
+	php_info_print_table_header(2, "SELinux support", "enabled");
 	php_info_print_table_end();
+}
+
+/*
+ * struct zend_op_array 	@ Zend/zend_compile.h:191
+ * struct zend_execute_data @ Zend/zend_compile.h:308
+ */
+void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
+{
+	zend_execute_data    *edata = EG(current_execute_data);
+
+	// @DEBUG
+	char buf[500];
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] Executing %s <br>", op_array->filename );
+	PHPWRITE( buf, strlen(buf) );
+	
+	old_zend_execute(op_array TSRMLS_DC);
 }
 
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
@@ -101,7 +127,13 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashTable *arr_hash;
 	HashPosition pointer;
 	int i;
-    
+	
+	// @DEBUG
+	char buf[500];
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] Importing variables..<br>" );
+	PHPWRITE( buf, strlen(buf) );
+	
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables(array_ptr TSRMLS_CC);
 	
@@ -128,17 +160,16 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 		}
 	}
 	 
-	// TODO selinux stuff (set context, etc)
-	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
-	{
-		if (fcgi_values[i])
-		{
-// 			char buf[500];
-// 			memset( buf, 0, sizeof(buf) );
-// 			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
-// 			PHPWRITE( buf, strlen(buf) );
-		}
-	}
+// 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
+// 	{
+// 		if (fcgi_values[i])
+// 		{
+//  			char buf[500];
+//  			memset( buf, 0, sizeof(buf) );
+//  			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
+//  			PHPWRITE( buf, strlen(buf) );
+// 		}
+// 	}
 
 	// Don't expose SePHP parameters to scripts through $_SERVER	 
 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
