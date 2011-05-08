@@ -25,9 +25,7 @@
 #include "ext/standard/info.h"
 #include "php_selinux.h"
 
-/* If you declare any globals in php_selinux.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(selinux)
-*/
 
 void (*old_php_import_environment_variables)(zval *array_ptr TSRMLS_DC);
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
@@ -54,7 +52,7 @@ zend_module_entry selinux_module_entry = {
 	PHP_RSHUTDOWN(selinux),
 	PHP_MINFO(selinux),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.1", /* Replace with version number for your extension */
+	"0.1",
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -65,6 +63,9 @@ ZEND_GET_MODULE(selinux)
 
 PHP_MINIT_FUNCTION(selinux)
 {
+	// Adds FastCGI parameters to catch
+	SELINUX_G(fcgi_params[SELINUX_PARAM_SELINUX_DOMAIN_IDX]) = SELINUX_PARAM_SELINUX_DOMAIN_NAME;
+	
 	return SUCCESS;
 }
 
@@ -120,8 +121,6 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 {
-	char *fcgi_params[SELINUX_PARAMS_COUNT] = { SELINUX_PARAMS };
-	char *fcgi_values[SELINUX_PARAMS_COUNT];
 	zval **data;
 	HashTable *arr_hash;
 	HashPosition pointer;
@@ -151,24 +150,24 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 			{
 				/*
 				 * Apache mod_fastcgi adds a parameter for every SetEnv <name> <value>
-				 * in the form of "REDIRECT_<name>". It needs to be hide too.
+				 * in the form of "REDIRECT_<name>". It needs to be hidden too.
 				 */
-				int redirect_len = strlen("REDIRECT_") + strlen(fcgi_params[i]) + 1;
+				int redirect_len = strlen("REDIRECT_") + strlen( SELINUX_G(fcgi_params[i]) ) + 1;
 				char *redirect_param = (char *) emalloc( redirect_len );
 				
 				memset( redirect_param, 0, redirect_len );
 				strcat( redirect_param, "REDIRECT_" );
-				strcat( redirect_param, fcgi_params[i] );
+				strcat( redirect_param, SELINUX_G(fcgi_params[i]) );
 					
-				if (!strncmp( key, fcgi_params[i], strlen(fcgi_params[i])))
+				if (!strncmp( key, SELINUX_G(fcgi_params[i]), strlen( SELINUX_G(fcgi_params[i]) )))
 				{
 					// TODO handle of other types (int, null, etc) if needed
 					if (Z_TYPE_PP(data) == IS_STRING)
-					fcgi_values[i] = Z_STRVAL_PP(data);
+					SELINUX_G(fcgi_values[i]) = Z_STRVAL_PP(data);
 					
 					// @DEBUG
 					memset( buf, 0, sizeof(buf) );
-					sprintf( buf, "[*] Got %s => %s <br>", fcgi_params[i], fcgi_values[i] );
+					sprintf( buf, "[*] Got %s => %s <br>", SELINUX_G(fcgi_params[i]), SELINUX_G(fcgi_values[i]) );
 					PHPWRITE( buf, strlen(buf) );
 					
 					// Hide <selinux_param>

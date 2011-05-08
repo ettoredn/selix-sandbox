@@ -19,10 +19,8 @@
 #define PHP_SELINUX_H
 
 #define SELINUX_PARAMS_COUNT		1
-#define SELINUX_PARAMS	"SELINUX_DOMAIN"
-// #define SELINUX_PARAMS	"SELINUX_DOMAIN", "OTHER_PARAM"
-#define SELINUX_PARAM_SELINUX_DOMAIN	0
-// #define SELINUX_PARAM_SELINUX_TEST	1
+#define SELINUX_PARAM_SELINUX_DOMAIN_IDX	0
+#define SELINUX_PARAM_SELINUX_DOMAIN_NAME	"SELINUX_DOMAIN"
 
 extern zend_module_entry selinux_module_entry;
 #define phpext_selinux_ptr &selinux_module_entry
@@ -45,12 +43,10 @@ PHP_RINIT_FUNCTION(selinux);
 PHP_RSHUTDOWN_FUNCTION(selinux);
 PHP_MINFO_FUNCTION(selinux);
 
-/* 
 ZEND_BEGIN_MODULE_GLOBALS(selinux)
-	long  global_value;
-	char *global_string;
+	char *fcgi_params[SELINUX_PARAMS_COUNT]; // = { SELINUX_PARAMS };
+	char *fcgi_values[SELINUX_PARAMS_COUNT];
 ZEND_END_MODULE_GLOBALS(selinux)
-*/
 
 #ifdef ZTS
 #define SELINUX_G(v) TSRMG(selinux_globals_id, zend_selinux_globals *, v)
