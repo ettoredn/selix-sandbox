@@ -170,7 +170,7 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 // 		}
 // 	}
 
-	// Don't expose SePHP parameters to scripts through $_SERVER	 
+	// Don't expose SELinux parameters to scripts through environment variables
 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
 		if (fcgi_values[i])
 			zend_hash_del(arr_hash, fcgi_params[i], strlen(fcgi_params[i]) + 1);
