@@ -149,9 +149,20 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 		{
 			for (i=0; i < SELINUX_PARAMS_COUNT; i++)
 			{
+				/*
+				 * Apache mod_fastcgi adds a parameter for every SetEnv <name> <value>
+				 * in the form of "REDIRECT_<name>". It needs to be hide too.
+				 */
+				int redirect_len = strlen("REDIRECT_") + strlen(fcgi_params[i]) + 1;
+				char *redirect_param = (char *) emalloc( redirect_len );
+				
+				memset( redirect_param, 0, redirect_len );
+				strcat( redirect_param, "REDIRECT_" );
+				strcat( redirect_param, fcgi_params[i] );
+					
 				if (!strncmp( key, fcgi_params[i], strlen(fcgi_params[i])))
 				{
-					// TODO handle of other types (int, null, etc)
+					// TODO handle of other types (int, null, etc) if needed
 					if (Z_TYPE_PP(data) == IS_STRING)
 					fcgi_values[i] = Z_STRVAL_PP(data);
 					
@@ -159,13 +170,17 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 					memset( buf, 0, sizeof(buf) );
 					sprintf( buf, "[*] Got %s => %s <br>", fcgi_params[i], fcgi_values[i] );
 					PHPWRITE( buf, strlen(buf) );
+					
+					// Hide <selinux_param>
+					zend_hash_del(arr_hash, key, strlen(key) + 1);
 				}
+				
+				// Hide REDIRECT_<selinux_param> entries
+				if (!strncmp( key, redirect_param, redirect_len ))
+					zend_hash_del(arr_hash, key, strlen(key) + 1);
+				
+				efree( redirect_param );
 			}
 		}
 	}
-
-	// Don't expose SELinux parameters to scripts through environment variables
-	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
-		if (fcgi_values[i])
-			zend_hash_del(arr_hash, fcgi_params[i], strlen(fcgi_params[i]) + 1);
 }
