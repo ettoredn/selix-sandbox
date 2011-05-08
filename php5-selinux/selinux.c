@@ -33,6 +33,10 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC);
 void (*old_zend_execute)(zend_op_array *op_array TSRMLS_DC);
 void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC);
 
+zend_op_array *(*old_zend_compile_file)(zend_file_handle *file_handle, int type TSRMLS_DC);
+zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
+
+
 /*
  * Every user visible function must have an entry in selinux_functions[].
  */
@@ -76,14 +80,18 @@ PHP_MSHUTDOWN_FUNCTION(selinux)
 
 PHP_RINIT_FUNCTION(selinux)
 {
-	/* Hijack php_import_environment_variables ( main/php_variables.c:824 ) */
+	/* Override php_import_environment_variables ( main/php_variables.c:824 ) */
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = selinux_php_import_environment_variables;
 
-	/* Hijack zend_execute to execute it in a SELinux context */
+	/* Override zend_execute to execute it in a SELinux context */
 	old_zend_execute = zend_execute;
 	zend_execute = selinux_zend_execute;
 	
+	/* Override zend_compile_file to check read permission on it for currenct SELinux domain */
+	old_zend_compile_file = zend_compile_file;
+	zend_compile_file = selinux_zend_compile_file;
+		
 	return SUCCESS;
 }
 
@@ -91,6 +99,7 @@ PHP_RSHUTDOWN_FUNCTION(selinux)
 {
 	php_import_environment_variables = old_php_import_environment_variables;
 	zend_execute = old_zend_execute;
+	zend_compile_file = old_zend_compile_file;
 	
 	return SUCCESS;
 }
@@ -102,13 +111,25 @@ PHP_MINFO_FUNCTION(selinux)
 	php_info_print_table_end();
 }
 
+zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC)
+{
+	// @DEBUG
+	char buf[500];
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] Compiling %s <br>", file_handle->filename );
+	PHPWRITE( buf, strlen(buf) );
+	
+	return old_zend_compile_file( file_handle, type TSRMLS_CC );
+}
+
+
 /*
  * struct zend_op_array 	@ Zend/zend_compile.h:191
  * struct zend_execute_data @ Zend/zend_compile.h:308
  */
 void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
-	zend_execute_data    *edata = EG(current_execute_data);
+	// zend_execute_data *edata = EG(current_execute_data);
 
 	// @DEBUG
 	char buf[500];
@@ -116,7 +137,7 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 	sprintf( buf, "[*] Executing %s <br>", op_array->filename );
 	PHPWRITE( buf, strlen(buf) );
 	
-	old_zend_execute(op_array TSRMLS_DC);
+	old_zend_execute(op_array TSRMLS_CC);
 }
 
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
