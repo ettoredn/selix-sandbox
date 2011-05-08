@@ -18,10 +18,11 @@
 #ifndef PHP_SELINUX_H
 #define PHP_SELINUX_H
 
-#define SELINUX_PARAMS_COUNT		2
-#define SELINUX_PARAMS	"SERVER_SIGNATURE", "HTTP_USER_AGENT"
-#define SELINUX_PARAM_SELINUX_CONTEXT	0
-#define SELINUX_PARAM_SELINUX_TEST	1
+#define SELINUX_PARAMS_COUNT		1
+#define SELINUX_PARAMS	"SELINUX_DOMAIN"
+// #define SELINUX_PARAMS	"SELINUX_DOMAIN", "OTHER_PARAM"
+#define SELINUX_PARAM_SELINUX_DOMAIN	0
+// #define SELINUX_PARAM_SELINUX_TEST	1
 
 extern zend_module_entry selinux_module_entry;
 #define phpext_selinux_ptr &selinux_module_entry

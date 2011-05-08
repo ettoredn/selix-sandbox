@@ -79,7 +79,7 @@ PHP_RINIT_FUNCTION(selinux)
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = selinux_php_import_environment_variables;
 
-	/* Hook zend_execute to execute it in a SELinux context */
+	/* Hijack zend_execute to execute it in a SELinux context */
 	old_zend_execute = zend_execute;
 	zend_execute = selinux_zend_execute;
 	
@@ -130,7 +130,7 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	// @DEBUG
 	char buf[500];
 	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] Importing variables..<br>" );
+	sprintf( buf, "[*] Hijacking environment variables import..<br>" );
 	PHPWRITE( buf, strlen(buf) );
 	
 	/* call php's original import as a catch-all */
@@ -154,21 +154,15 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 					// TODO handle of other types (int, null, etc)
 					if (Z_TYPE_PP(data) == IS_STRING)
 					fcgi_values[i] = Z_STRVAL_PP(data);
+					
+					// @DEBUG
+					memset( buf, 0, sizeof(buf) );
+					sprintf( buf, "[*] Got %s => %s <br>", fcgi_params[i], fcgi_values[i] );
+					PHPWRITE( buf, strlen(buf) );
 				}
 			}
 		}
 	}
-	 
-// 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
-// 	{
-// 		if (fcgi_values[i])
-// 		{
-//  			char buf[500];
-//  			memset( buf, 0, sizeof(buf) );
-//  			sprintf( buf, "SELINUX %s => %s <br>", fcgi_params[i], fcgi_values[i] );
-//  			PHPWRITE( buf, strlen(buf) );
-// 		}
-// 	}
 
 	// Don't expose SELinux parameters to scripts through environment variables
 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)

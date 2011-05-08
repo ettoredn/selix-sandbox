@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Configuration variables
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
-REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi selinux-basics libselinux1-dev"
+REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev"
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
-DISABLE_NGINX=1
+DISABLE_NGINX=0
 
 function usage {
 	echo "Usage: $0 [--disable-apache] [--disable-nginx]"
@@ -106,7 +106,16 @@ fi
 ### Nginx configuration ###
 if (( $DISABLE_NGINX == 0 ))
 then
-	echo "*** Nginx not yet implemented!"
+	# Disable default nginx virtualhost
+	echo -e "\nDisabling default Nginx virtualhost ..."
+	rm "/etc/nginx/sites-enabled/default" 2>/dev/null
+	
+	# Copy virtualhost into nginx sites and enable it
+	echo -e "\nEnabling SePHP Apache virtualhost ..."
+	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
+		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
+	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
+	/etc/init.d/nginx restart || exit 1
 fi
 
 ### php5-selinux module ###
