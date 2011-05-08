@@ -75,7 +75,7 @@ PHP_MSHUTDOWN_FUNCTION(selinux)
 
 PHP_RINIT_FUNCTION(selinux)
 {
-	/* We get called by PHP when it imports environment variables ( main/php_variables.c:824 ) */
+	/* Hijack php_import_environment_variables ( main/php_variables.c:824 ) */
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = selinux_php_import_environment_variables;
 
