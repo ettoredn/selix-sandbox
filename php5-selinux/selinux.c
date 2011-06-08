@@ -105,12 +105,10 @@ PHP_RSHUTDOWN_FUNCTION(selinux)
 {
 	int i;
 	
-	// Dealloc FastCGI parameters
+	// Dealloc parameters
 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
-	{
 		if (SELINUX_G(fcgi_values[i]))
 			efree( SELINUX_G(fcgi_values[i]) );
-	}
 	
 	// Restore handlers
 	php_import_environment_variables = old_php_import_environment_variables;
