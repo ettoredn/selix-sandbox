@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Configuration variables
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
-REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev"
+REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev gawk"
 REQUIRED_APACHE_MODS="actions fastcgi"
 DISABLE_APACHE=0
 DISABLE_NGINX=0
@@ -133,6 +133,12 @@ if (( buildfail == 0 )) ; then
 	echo -e "\tExecuting configure ..."
 	./configure >/dev/null || buildfail=1
 fi
+
+# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
+# with libselinux (-lselinux) seems not working. Perhaps there's an incompatibility between
+# phpize related tools and autotools in Debian 6.
+sed -i '1 i SELINUX_SHARED_LIBADD = -lselinux' Makefile
+
 if (( buildfail == 0 )) ; then 
 	echo -e "\tExecuting make ..."
 	make >/dev/null || buildfail=1
