@@ -19,8 +19,10 @@
 #define PHP_SELINUX_H
 
 #define SELINUX_PARAMS_COUNT		1
-#define SELINUX_PARAM_SELINUX_DOMAIN_IDX	0
-#define SELINUX_PARAM_SELINUX_DOMAIN_NAME	"SELINUX_DOMAIN"
+#define PARAM_DOMAIN_IDX	0
+#define PARAM_DOMAIN_NAME	"SELINUX_DOMAIN"
+#define PARAM_RANGE_IDX		1
+#define PARAM_RANGE_NAME	"SELINUX_RANGE"
 
 extern zend_module_entry selinux_module_entry;
 #define phpext_selinux_ptr &selinux_module_entry

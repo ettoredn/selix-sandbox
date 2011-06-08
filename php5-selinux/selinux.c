@@ -15,10 +15,13 @@
    | Authors: Ettore Del Negro <write@ettoredelnegro.me>                  |
    +----------------------------------------------------------------------+
  */
+#include <pthread.h>
+#include <selinux/selinux.h>
+#include <selinux/context.h>
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 #include "php.h"
 #include "php_variables.h"
 #include "php_ini.h"
@@ -36,6 +39,8 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC);
 zend_op_array *(*old_zend_compile_file)(zend_file_handle *file_handle, int type TSRMLS_DC);
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
+void *do_zend_execute( void *data );
+int selinux_set_domain();
 
 /*
  * Every user visible function must have an entry in selinux_functions[].
@@ -68,7 +73,8 @@ ZEND_GET_MODULE(selinux)
 PHP_MINIT_FUNCTION(selinux)
 {
 	// Adds FastCGI parameters to catch
-	SELINUX_G(fcgi_params[SELINUX_PARAM_SELINUX_DOMAIN_IDX]) = SELINUX_PARAM_SELINUX_DOMAIN_NAME;
+	SELINUX_G(fcgi_params[PARAM_DOMAIN_IDX]) = PARAM_DOMAIN_NAME;
+	SELINUX_G(fcgi_params[PARAM_RANGE_IDX]) = PARAM_RANGE_NAME;
 	
 	return SUCCESS;
 }
@@ -97,6 +103,16 @@ PHP_RINIT_FUNCTION(selinux)
 
 PHP_RSHUTDOWN_FUNCTION(selinux)
 {
+	int i;
+	
+	// Dealloc FastCGI parameters
+	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
+	{
+		if (SELINUX_G(fcgi_values[i]))
+			efree( SELINUX_G(fcgi_values[i]) );
+	}
+	
+	// Restore handlers
 	php_import_environment_variables = old_php_import_environment_variables;
 	zend_execute = old_zend_execute;
 	zend_compile_file = old_zend_compile_file;
@@ -113,11 +129,14 @@ PHP_MINFO_FUNCTION(selinux)
 
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC)
 {
+	if (is_selinux_enabled() < 1)
+		return old_zend_compile_file( file_handle, type TSRMLS_CC );
+		
 	// @DEBUG
 	char buf[500];
 	memset( buf, 0, sizeof(buf) );
 	sprintf( buf, "[*] Compiling %s <br>", file_handle->filename );
-	PHPWRITE( buf, strlen(buf) );
+	php_write( buf, strlen(buf) );
 	
 	return old_zend_compile_file( file_handle, type TSRMLS_CC );
 }
@@ -130,14 +149,106 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
 	// zend_execute_data *edata = EG(current_execute_data);
+	pthread_t execute_thread;
+	int ret;
 
+	if (is_selinux_enabled() < 1)
+		return old_zend_execute(op_array TSRMLS_CC);
+		
 	// @DEBUG
 	char buf[500];
 	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] Executing %s <br>", op_array->filename );
-	PHPWRITE( buf, strlen(buf) );
+	sprintf( buf, "[*] Executing %s<br>", op_array->filename );
+	php_write( buf, strlen(buf) );
 	
+	if (ret = pthread_create( &execute_thread, NULL, do_zend_execute, op_array ))
+	{
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error %d", ret);
+		return;
+	}
+	
+	pthread_join( execute_thread, NULL );
+}
+
+/*
+ * Executed in a thread.
+ * It uses selinux_set_domain in order to transition to the proper security domain,
+ * then calls zend_execute()
+ */
+void *do_zend_execute( void *data )
+{
+	zend_op_array *op_array = (zend_op_array *)data;
+	
+	selinux_set_domain();
 	old_zend_execute(op_array TSRMLS_CC);
+	
+	return NULL;
+}
+
+/*
+ * It sets the security context for the calling thread to the new one received by
+ * environment variables.
+ */
+int selinux_set_domain()
+{
+	security_context_t current_ctx, new_ctx, newraw_ctx;
+	context_t context;
+	char buf[500];
+	
+	if (getcon( &current_ctx ) < 0)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "getcon() failed");
+		return -1;
+	}
+	
+	context = context_new( current_ctx );
+	if (!context)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "context_new() failed");
+		freecon( current_ctx );
+		return -1;
+	}
+	
+	// @DEBUG
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] SELinux current context: %s<br>", current_ctx );
+	php_write( buf, strlen(buf) );
+	
+	freecon( current_ctx );
+	
+	context_type_set(context, SELINUX_G(fcgi_values[PARAM_DOMAIN_IDX]) );
+	// @TODO context_range_set(context, SELINUX_G(fcgi_values[PARAM_RANGE_IDX]) );
+	new_ctx = context_str( context );
+	if (!new_ctx)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "context_str() failed");
+		context_free( context );		
+		return -1;
+	}
+	
+	// @DEBUG
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
+	php_write( buf, strlen(buf) );
+
+	context_free( context );
+	
+	if (selinux_trans_to_raw_context( new_ctx, &newraw_ctx ) < 0)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "selinux_trans_to_raw_context() failed");
+		freecon( new_ctx );
+		return -1;
+	}
+	
+	if (setcon_raw( newraw_ctx ) < 0)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon_raw() failed");
+ 		freecon(newraw_ctx);
+		return -1;
+	}
+
+	freecon(newraw_ctx);
+	return 0;
 }
 
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
@@ -147,12 +258,9 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashPosition pointer;
 	int i;
 	
-	// @DEBUG
-	char buf[500];
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] Hijacking environment variables import..<br>" );
-	PHPWRITE( buf, strlen(buf) );
-	
+	if (is_selinux_enabled() < 1)
+		return;
+
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables(array_ptr TSRMLS_CC);
 	
@@ -184,12 +292,13 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 				{
 					// TODO handle of other types (int, null, etc) if needed
 					if (Z_TYPE_PP(data) == IS_STRING)
-					SELINUX_G(fcgi_values[i]) = Z_STRVAL_PP(data);
+					SELINUX_G(fcgi_values[i]) = estrdup( Z_STRVAL_PP(data) );
 					
 					// @DEBUG
+					char buf[500];
 					memset( buf, 0, sizeof(buf) );
 					sprintf( buf, "[*] Got %s => %s <br>", SELINUX_G(fcgi_params[i]), SELINUX_G(fcgi_values[i]) );
-					PHPWRITE( buf, strlen(buf) );
+					php_write( buf, strlen(buf) );
 					
 					// Hide <selinux_param>
 					zend_hash_del(arr_hash, key, strlen(key) + 1);
