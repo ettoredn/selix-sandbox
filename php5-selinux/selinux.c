@@ -150,10 +150,9 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
 	// zend_execute_data *edata = EG(current_execute_data);
 	pthread_t execute_thread;
-	int ret;
 
 	if (is_selinux_enabled() < 1)
-		return old_zend_execute(op_array TSRMLS_CC);
+		return old_zend_execute( op_array TSRMLS_CC );
 		
 	// @DEBUG
 	char buf[500];
@@ -161,9 +160,9 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 	sprintf( buf, "[*] Executing %s<br>", op_array->filename );
 	php_write( buf, strlen(buf) );
 	
-	if (ret = pthread_create( &execute_thread, NULL, do_zend_execute, op_array ))
+	if (pthread_create( &execute_thread, NULL, do_zend_execute, op_array ))
 	{
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error %d", ret);
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
 		return;
 	}
 	
@@ -180,13 +179,13 @@ void *do_zend_execute( void *data )
 	zend_op_array *op_array = (zend_op_array *)data;
 	
 	selinux_set_domain();
-	old_zend_execute(op_array TSRMLS_CC);
+	old_zend_execute( op_array TSRMLS_CC );
 	
 	return NULL;
 }
 
 /*
- * It sets the security context for the calling thread to the new one received by
+ * It sets the security context for the calling thread to the new one received from
  * environment variables.
  */
 int selinux_set_domain()
@@ -194,6 +193,7 @@ int selinux_set_domain()
 	security_context_t current_ctx, new_ctx, newraw_ctx;
 	context_t context;
 	char buf[500];
+	int ret;
 	
 	if (getcon( &current_ctx ) < 0)
 	{
@@ -216,8 +216,8 @@ int selinux_set_domain()
 	
 	freecon( current_ctx );
 	
-	context_type_set(context, SELINUX_G(fcgi_values[PARAM_DOMAIN_IDX]) );
-	// @TODO context_range_set(context, SELINUX_G(fcgi_values[PARAM_RANGE_IDX]) );
+	context_type_set( context, SELINUX_G(fcgi_values[PARAM_DOMAIN_IDX]) );
+	context_range_set( context, SELINUX_G(fcgi_values[PARAM_RANGE_IDX]) );
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
@@ -240,17 +240,21 @@ int selinux_set_domain()
 		return -1;
 	}
 	
-	if (setcon_raw( newraw_ctx ) < 0)
+	ret = setcon_raw( newraw_ctx );
+	if ( ret < 0)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon_raw() failed");
- 		freecon(newraw_ctx);
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon_raw() failed with return code %d", ret);
+ 		freecon( newraw_ctx );
 		return -1;
 	}
 
-	freecon(newraw_ctx);
+	freecon( newraw_ctx );
 	return 0;
 }
 
+/*
+ * It gets SELinux related values from environment variables.
+ */
 void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 {
 	zval **data;
@@ -262,10 +266,10 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 		return;
 
 	/* call php's original import as a catch-all */
-	old_php_import_environment_variables(array_ptr TSRMLS_CC);
+	old_php_import_environment_variables( array_ptr TSRMLS_CC );
 	
 	arr_hash = Z_ARRVAL_P(array_ptr);
-	for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer); 
+	for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer ); 
 		zend_hash_get_current_data_ex(arr_hash, (void**) &data, &pointer) == SUCCESS; 
 		zend_hash_move_forward_ex(arr_hash, &pointer))
 	{
