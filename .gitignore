@@ -11,6 +11,7 @@
 .svn/
 
 # Project
+test/
 php5-selinux/.deps
 php5-selinux/.libs/
 php5-selinux/Makefile*
@@ -30,3 +31,4 @@ php5-selinux/modules/
 php5-selinux/run-tests.php
 php5-selinux/*.la
 php5-selinux/*.lo
+

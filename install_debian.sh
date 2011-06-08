@@ -3,11 +3,11 @@
 PHP_MODULES_PATH="/usr/lib/php5/20090626"
 REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev gawk"
 REQUIRED_APACHE_MODS="actions fastcgi"
-DISABLE_APACHE=0
-DISABLE_NGINX=0
+SKIP_APACHE=0
+SKIP_NGINX=0
 
 function usage {
-	echo "Usage: $0 [--disable-apache] [--disable-nginx]"
+	echo "Usage: $0 [--skip-apache] [--skip-nginx]"
 	exit 1
 }
 
@@ -16,19 +16,16 @@ cwd=$( pwd )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
-newopts=$( getopt -n$0 -a --longoptions="disable-apache disable-nginx" "h" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx" "" "$@" ) || usage
 set -- $newopts
-while (( $# > 0 ))
+while (( $# >= 0 ))
 do
     case "$1" in
-       --disable-apache)   DISABLE_APACHE=1;shift;;
-       --disable-nginx)   DISABLE_NGINX=1;shift;;
-       -h)        usage;;
+       --skip-apache)   SKIP_APACHE=1;shift;;
+       --skip-nginx)   SKIP_NGINX=1;shift;;
+       --help)        usage;;
        --)        shift;break;;
-       -*)        usage;;
-       *)         break;;
     esac
-    shift
 done
 
 # Script must be run as root
@@ -69,7 +66,7 @@ then
 fi
 
 ### Apache configuration ###
-if (( $DISABLE_APACHE == 0 ))
+if (( $SKIP_APACHE == 0 ))
 then
 	# Check if required Apache modules are enabled
 	echo -e "\nChecking if required Apache modules are enabled ..."
@@ -93,25 +90,25 @@ then
 	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || exit 1
 
 	# Disable default Apache virtualhost
-	echo -e "\nDisabling default Apache virtualhost ..."
+	echo -e "Disabling default Apache virtualhost ..."
 	a2dissite default
 
 	# Copy virtualhost into apache sites and enable it
-	echo -e "\nEnabling SePHP Apache virtualhost ..."
+	echo -e "Enabling SePHP Apache virtualhost ..."
 	cat "$cwd/configs/apache/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/apache2/sites-available/sephp-vhost.conf
 	a2ensite sephp-vhost.conf && /etc/init.d/apache2 restart || exit 1
 fi
 
 ### Nginx configuration ###
-if (( $DISABLE_NGINX == 0 ))
+if (( $SKIP_NGINX == 0 ))
 then
 	# Disable default nginx virtualhost
 	echo -e "\nDisabling default Nginx virtualhost ..."
 	rm "/etc/nginx/sites-enabled/default" 2>/dev/null
 	
 	# Copy virtualhost into nginx sites and enable it
-	echo -e "\nEnabling SePHP Apache virtualhost ..."
+	echo -e "Enabling SePHP Nginx virtualhost ..."
 	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
 	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
