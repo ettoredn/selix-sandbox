@@ -73,8 +73,8 @@ ZEND_GET_MODULE(selinux)
 PHP_MINIT_FUNCTION(selinux)
 {
 	// Adds FastCGI parameters to catch
-	SELINUX_G(fcgi_params[PARAM_DOMAIN_IDX]) = PARAM_DOMAIN_NAME;
-	SELINUX_G(fcgi_params[PARAM_RANGE_IDX]) = PARAM_RANGE_NAME;
+	SELINUX_G(separams_names[PARAM_DOMAIN_IDX]) = PARAM_DOMAIN_NAME;
+	SELINUX_G(separams_names[PARAM_RANGE_IDX]) = PARAM_RANGE_NAME;
 	
 	return SUCCESS;
 }
@@ -107,8 +107,8 @@ PHP_RSHUTDOWN_FUNCTION(selinux)
 	
 	// Dealloc parameters
 	for (i=0; i < SELINUX_PARAMS_COUNT; i++)
-		if (SELINUX_G(fcgi_values[i]))
-			efree( SELINUX_G(fcgi_values[i]) );
+		if (SELINUX_G(separams_values[i]))
+			efree( SELINUX_G(separams_values[i]) );
 	
 	// Restore handlers
 	php_import_environment_variables = old_php_import_environment_variables;
@@ -214,8 +214,8 @@ int selinux_set_domain()
 	
 	freecon( current_ctx );
 	
-	context_type_set( context, SELINUX_G(fcgi_values[PARAM_DOMAIN_IDX]) );
-	context_range_set( context, SELINUX_G(fcgi_values[PARAM_RANGE_IDX]) );
+	context_type_set( context, SELINUX_G(separams_values[PARAM_DOMAIN_IDX]) );
+	context_range_set( context, SELINUX_G(separams_values[PARAM_RANGE_IDX]) );
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
@@ -283,23 +283,23 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 				 * Apache mod_fastcgi adds a parameter for every SetEnv <name> <value>
 				 * in the form of "REDIRECT_<name>". These need to be hidden too.
 				 */
-				int redirect_len = strlen("REDIRECT_") + strlen( SELINUX_G(fcgi_params[i]) ) + 1;
+				int redirect_len = strlen("REDIRECT_") + strlen( SELINUX_G(separams_names[i]) ) + 1;
 				char *redirect_param = (char *) emalloc( redirect_len );
 				
 				memset( redirect_param, 0, redirect_len );
 				strcat( redirect_param, "REDIRECT_" );
-				strcat( redirect_param, SELINUX_G(fcgi_params[i]) );
+				strcat( redirect_param, SELINUX_G(separams_names[i]) );
 					
-				if (!strncmp( key, SELINUX_G(fcgi_params[i]), strlen( SELINUX_G(fcgi_params[i]) )))
+				if (!strncmp( key, SELINUX_G(separams_names[i]), strlen( SELINUX_G(separams_names[i]) )))
 				{
 					// TODO handle of other types (int, null, etc) if needed
 					if (Z_TYPE_PP(data) == IS_STRING)
-					SELINUX_G(fcgi_values[i]) = estrdup( Z_STRVAL_PP(data) );
+					SELINUX_G(separams_values[i]) = estrdup( Z_STRVAL_PP(data) );
 					
 					// @DEBUG
 					char buf[500];
 					memset( buf, 0, sizeof(buf) );
-					sprintf( buf, "[*] Got %s => %s <br>", SELINUX_G(fcgi_params[i]), SELINUX_G(fcgi_values[i]) );
+					sprintf( buf, "[*] Got %s => %s <br>", SELINUX_G(separams_names[i]), SELINUX_G(separams_values[i]) );
 					php_write( buf, strlen(buf) );
 					
 					// Hide <selinux_param>
