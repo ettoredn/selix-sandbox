@@ -40,7 +40,7 @@ zend_op_array *(*old_zend_compile_file)(zend_file_handle *file_handle, int type 
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
 void *do_zend_execute( void *data );
-int selinux_set_domain();
+int set_context( char *domain, char *range );
 
 /*
  * Every user visible function must have an entry in selinux_functions[].
@@ -176,17 +176,17 @@ void *do_zend_execute( void *data )
 {
 	zend_op_array *op_array = (zend_op_array *)data;
 	
-	selinux_set_domain();
+	set_context( SELINUX_G(separams_values[PARAM_DOMAIN_IDX]), SELINUX_G(separams_values[PARAM_RANGE_IDX]) );
 	old_zend_execute( op_array TSRMLS_CC );
 	
 	return NULL;
 }
 
 /*
- * It sets the security context for the calling thread to the new one received from
+ * It sets the security context of the calling thread to the new one received from
  * environment variables.
  */
-int selinux_set_domain()
+int set_context( char *domain, char *range )
 {
 	security_context_t current_ctx, new_ctx, newraw_ctx;
 	context_t context;
@@ -214,8 +214,8 @@ int selinux_set_domain()
 	
 	freecon( current_ctx );
 	
-	context_type_set( context, SELINUX_G(separams_values[PARAM_DOMAIN_IDX]) );
-	context_range_set( context, SELINUX_G(separams_values[PARAM_RANGE_IDX]) );
+	context_type_set( context, domain );
+	context_range_set( context,  range );
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
