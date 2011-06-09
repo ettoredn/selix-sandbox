@@ -5,9 +5,11 @@ REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi n
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
 SKIP_NGINX=0
+SKIP_PHPSELINUX=0
+SKIP_POLICY=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache] [--skip-nginx]"
+	echo "Usage: $0 [--skip-apache] [--skip-nginx] [--skip-phpselinux] [--skip-policy]"
 	exit 1
 }
 
@@ -16,15 +18,17 @@ cwd=$( pwd )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx" "" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "help,skip-apache,skip-nginx,skip-phpselinux,skip-policy" "ansph" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
     case "$1" in
-       --skip-apache)   SKIP_APACHE=1;shift;;
-       --skip-nginx)   SKIP_NGINX=1;shift;;
-       --help)        usage;;
-       --)        shift;break;;
+       --skip-apache | -a)		SKIP_APACHE=1;shift;;
+       --skip-nginx | -n)		SKIP_NGINX=1;shift;;
+       --skip-phpselinux | -s)	SKIP_PHPSELINUX=1;shift;;
+       --skip-policy | -p)		SKIP_POLICY=1;shift;;
+       --help | -h) usage;;
+       --) shift;break;;
     esac
 done
 
@@ -116,37 +120,62 @@ then
 fi
 
 ### php5-selinux module ###
-echo -e "\nBuilding php5-selinux module ..."
-cd php5-selinux
-buildfail=0
-
-if (( buildfail == 0 )) ; then
-	echo -e "\tExecuting phpize ..."
-	phpize --clean >/dev/null || buildfail=1
-	phpize >/dev/null || buildfail=1
-fi
-
-if (( buildfail == 0 )) ; then
-	echo -e "\tExecuting configure ..."
-	./configure >/dev/null || buildfail=1
-fi
-
-# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
-# with libselinux (-lselinux) seems not working. Perhaps there's an incompatibility between
-# phpize related tools and autotools in Debian 6.
-sed -i '1 i SELINUX_SHARED_LIBADD = -lselinux' Makefile
-
-if (( buildfail == 0 )) ; then 
-	echo -e "\tExecuting make ..."
-	make >/dev/null || buildfail=1
-fi
-
-cd $cwd
-if (( buildfail != 0 ))
+if (( $SKIP_PHPSELINUX == 0 ))
 then
-	echo "*** Build of php5-selinux module failed." >&2 && exit 1
+	echo -e "\nBuilding php5-selinux module ..."
+	cd php5-selinux
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting phpize ..."
+		phpize --clean >/dev/null || buildfail=1
+		phpize >/dev/null || buildfail=1
+	fi
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting configure ..."
+		./configure >/dev/null || buildfail=1
+	fi
+	
+	# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
+	# with libselinux (-lselinux) seems not working. Perhaps there's an incompatibility between
+	# phpize related tools and autotools in Debian 6.
+	sed -i '1 i SELINUX_SHARED_LIBADD = -lselinux' Makefile
+	
+	if (( buildfail == 0 )) ; then 
+		echo -e "\tExecuting make ..."
+		make >/dev/null || buildfail=1
+	fi
+	
+	cd $cwd
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of php5-selinux module failed." >&2 && exit 1
+	fi
+	
+	echo -e "\nLoading php5-selinux module ..."
+	echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
+	/etc/init.d/php5-fpm restart || exit 1
 fi
 
-echo -e "\nLoading php5-selinux module ..."
-echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
-/etc/init.d/php5-fpm restart || exit 1
+### policy module ###
+if (( $SKIP_POLICY == 0 ))
+then
+	echo -e "\nBuilding FPM policy module ..."
+	cd policy/php-fpm
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting make ..."
+		make clean >/dev/null || buildfail=1
+		make >/dev/null || buildfail=1
+	fi
+
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of FPM policy module failed." >&2 && exit 1
+	fi
+	
+	echo -e "\tLoading policy module ..."
+	semodule -i php-fpm.pp || exit 1
+	cd $cwd
+fi

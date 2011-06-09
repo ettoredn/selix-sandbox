@@ -191,7 +191,6 @@ int set_context( char *domain, char *range )
 	security_context_t current_ctx, new_ctx, newraw_ctx;
 	context_t context;
 	char buf[500];
-	int ret;
 	
 	if (getcon( &current_ctx ) < 0)
 	{
@@ -229,24 +228,14 @@ int set_context( char *domain, char *range )
 	sprintf( buf, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
 	php_write( buf, strlen(buf) );
 
-	context_free( context );
-	
-	if (selinux_trans_to_raw_context( new_ctx, &newraw_ctx ) < 0)
+	if (setcon( new_ctx ) < 0)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "selinux_trans_to_raw_context() failed");
-		freecon( new_ctx );
-		return -1;
-	}
-	
-	ret = setcon_raw( newraw_ctx );
-	if ( ret < 0)
-	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon_raw() failed with return code %d", ret);
- 		freecon( newraw_ctx );
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon() failed");
+		context_free( context );
 		return -1;
 	}
 
-	freecon( newraw_ctx );
+	context_free( context );
 	return 0;
 }
 

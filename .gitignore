@@ -12,6 +12,8 @@
 
 # Project
 test/
+policy/php-fpm/php-fpm.pp
+policy/php-fpm/tmp/
 php5-selinux/.deps
 php5-selinux/.libs/
 php5-selinux/Makefile*

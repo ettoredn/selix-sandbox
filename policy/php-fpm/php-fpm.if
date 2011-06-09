@@ -1,0 +1,24 @@
+## <summary>PHP-FPM policy</summary>
+
+########################################
+## <summary>
+##	Execute a domain transition to run myapp.
+## </summary>
+## <param name="domain">
+##	<summary>
+##	Domain allowed to transition.
+##	</summary>
+## </param>
+#
+#interface(`php_base',`
+#	gen_require(`
+#		attribute php_domains;
+#		type php_t, php_exec_t;
+#	')
+#	
+#	typeattribute $1 php_domains;
+#	
+#	typebounds php_t $1;
+#	allow php_t $1:process { dyntransition };
+#	role unconfined_r types $1;
+#')

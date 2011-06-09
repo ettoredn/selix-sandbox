@@ -1,0 +1,36 @@
+policy_module( php-fpm, 0.1 )
+########################################
+#
+# Declarations
+#
+attribute php_domains;
+
+type php_t;
+domain_type( php_t )
+domain_dyntrans_type( php_t )
+
+type php_exec_t;
+init_daemon_domain(php_t,php_exec_t)
+
+type php_log_t;
+logging_log_file( php_log_t )
+
+type php_tmp_t;
+files_tmp_file( php_tmp_t )
+
+type php_user_content_t;
+domain_type( php_user_content_t )
+#php_base( php_user_content_t )
+
+########################################
+#
+# Myapp local policy
+#
+allow php_t self:process { setcurrent dyntransition };
+typebounds php_t php_user_content_t;
+allow php_t php_user_content_t:process { dyntransition };
+role system_r types { php_user_content_t };
+
+allow php_t php_log_t:file { read_file_perms append_file_perms };
+allow php_t php_tmp_t:file manage_file_perms;
+files_tmp_filetrans( php_t, php_tmp_t, file )
