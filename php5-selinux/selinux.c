@@ -192,12 +192,14 @@ int set_context( char *domain, char *range )
 	context_t context;
 	char buf[500];
 	
+	// Get current context
 	if (getcon( &current_ctx ) < 0)
 	{
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "getcon() failed");
 		return -1;
 	}
 	
+	// Allocates a new context_t (i.e. malloc)
 	context = context_new( current_ctx );
 	if (!context)
 	{
@@ -213,8 +215,11 @@ int set_context( char *domain, char *range )
 	
 	freecon( current_ctx );
 	
+	// Sets values for the new context
 	context_type_set( context, domain );
 	context_range_set( context,  range );
+	
+	// Gets a pointer to a string representing the context_t
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
@@ -222,19 +227,21 @@ int set_context( char *domain, char *range )
 		context_free( context );		
 		return -1;
 	}
-	
-	// @DEBUG
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
-	php_write( buf, strlen(buf) );
 
+	// Set new context
 	if (setcon( new_ctx ) < 0)
 	{
 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon() failed");
 		context_free( context );
 		return -1;
 	}
-
+	
+	// @DEBUG
+	memset( buf, 0, sizeof(buf) );
+	sprintf( buf, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
+	php_write( buf, strlen(buf) );
+	
+	// Free previously allocated context_t and so the new_ctx pointer isn't valid anymore
 	context_free( context );
 	return 0;
 }
@@ -248,12 +255,12 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashTable *arr_hash;
 	HashPosition pointer;
 	int i;
-	
-	if (is_selinux_enabled() < 1)
-		return;
 
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables( array_ptr TSRMLS_CC );
+	
+	if (is_selinux_enabled() < 1)
+		return;
 	
 	arr_hash = Z_ARRVAL_P(array_ptr);
 	for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer ); 
