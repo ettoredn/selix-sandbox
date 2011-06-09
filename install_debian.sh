@@ -119,6 +119,29 @@ then
 	/etc/init.d/nginx restart || exit 1
 fi
 
+### policy module ###
+if (( $SKIP_POLICY == 0 ))
+then
+	echo -e "\nBuilding FPM policy module ..."
+	cd policy/php-fpm
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting make ..."
+		make clean >/dev/null || buildfail=1
+		make >/dev/null || buildfail=1
+	fi
+
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of FPM policy module failed." >&2 && exit 1
+	fi
+	
+	echo -e "\tLoading policy module ..."
+	semodule -i php-fpm.pp || exit 1
+	cd $cwd
+fi
+
 ### php5-selinux module ###
 if (( $SKIP_PHPSELINUX == 0 ))
 then
@@ -155,27 +178,4 @@ then
 	echo -e "\nLoading php5-selinux module ..."
 	echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
 	/etc/init.d/php5-fpm restart || exit 1
-fi
-
-### policy module ###
-if (( $SKIP_POLICY == 0 ))
-then
-	echo -e "\nBuilding FPM policy module ..."
-	cd policy/php-fpm
-	buildfail=0
-	
-	if (( buildfail == 0 )) ; then
-		echo -e "\tExecuting make ..."
-		make clean >/dev/null || buildfail=1
-		make >/dev/null || buildfail=1
-	fi
-
-	if (( buildfail != 0 ))
-	then
-		echo "*** Build of FPM policy module failed." >&2 && exit 1
-	fi
-	
-	echo -e "\tLoading policy module ..."
-	semodule -i php-fpm.pp || exit 1
-	cd $cwd
 fi
