@@ -57,7 +57,7 @@ void *dummy( void *data )
 {
 	security_context_t current_ctx;
 	
-	selinux_set_domain( "php_user_content_t", "s0-s0:c0.c1023" );
+	selinux_set_domain( "sephp_php_t", "s0-s0:c0.c1023" );
 	
 	if (getcon( &current_ctx ) < 0)
 	{

@@ -1,8 +1,6 @@
 policy_module( php-fpm, 0.1 )
-########################################
-#
-# Declarations
-#
+
+### Types, attributes
 attribute php_domains;
 
 type php_t;
@@ -18,19 +16,18 @@ logging_log_file( php_log_t )
 type php_tmp_t;
 files_tmp_file( php_tmp_t )
 
-type php_user_content_t;
-domain_type( php_user_content_t )
-#php_base( php_user_content_t )
+type sephp_php_t;
+domain_type( sephp_php_t )
+php_base( sephp_php_t )
 
-########################################
-#
-# Myapp local policy
-#
+### Rules
+# Needed by setcon()
 allow php_t self:process { setcurrent dyntransition };
-typebounds php_t php_user_content_t;
-allow php_t php_user_content_t:process { dyntransition };
-role system_r types { php_user_content_t };
 
+# php_t must be in system_r role
+role system_r types php_t;
+
+# Log files
 allow php_t php_log_t:file { read_file_perms append_file_perms };
 allow php_t php_tmp_t:file manage_file_perms;
 files_tmp_filetrans( php_t, php_tmp_t, file )
