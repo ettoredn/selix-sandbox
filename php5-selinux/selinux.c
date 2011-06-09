@@ -127,14 +127,18 @@ PHP_MINFO_FUNCTION(selinux)
 
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC)
 {
+	char *str;
+	
 	if (is_selinux_enabled() < 1)
 		return old_zend_compile_file( file_handle, type TSRMLS_CC );
-		
+
+	// Forces import of environment variables
+	php_request_startup_for_hook(TSRMLS_C);
+
 	// @DEBUG
-	char buf[500];
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] Compiling %s <br>", file_handle->filename );
-	php_write( buf, strlen(buf) );
+	asprintf( &str, "[*] Compiling %s <br>", file_handle->filename );
+	php_write( str, strlen(str) );
+	free(str);
 	
 	return old_zend_compile_file( file_handle, type TSRMLS_CC );
 }
@@ -153,10 +157,10 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 		return old_zend_execute( op_array TSRMLS_CC );
 		
 	// @DEBUG
-	char buf[500];
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] Executing %s<br>", op_array->filename );
-	php_write( buf, strlen(buf) );
+	char *str;
+	asprintf( &str, "[*] Executing %s<br>", op_array->filename );
+	php_write( str, strlen(str) );
+	free(str);
 	
 	if (pthread_create( &execute_thread, NULL, do_zend_execute, op_array ))
 	{
@@ -190,7 +194,7 @@ int set_context( char *domain, char *range )
 {
 	security_context_t current_ctx, new_ctx, newraw_ctx;
 	context_t context;
-	char buf[500];
+	char *str;
 	
 	// Get current context
 	if (getcon( &current_ctx ) < 0)
@@ -209,9 +213,9 @@ int set_context( char *domain, char *range )
 	}
 	
 	// @DEBUG
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] SELinux current context: %s<br>", current_ctx );
-	php_write( buf, strlen(buf) );
+	asprintf( &str, "[*] SELinux current context: %s<br>", current_ctx );
+	php_write( str, strlen(str) );
+	free(str);
 	
 	freecon( current_ctx );
 	
@@ -237,9 +241,9 @@ int set_context( char *domain, char *range )
 	}
 	
 	// @DEBUG
-	memset( buf, 0, sizeof(buf) );
-	sprintf( buf, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
-	php_write( buf, strlen(buf) );
+	asprintf( &str, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
+	php_write( str, strlen(str) );
+	free(str);
 	
 	// Free previously allocated context_t and so the new_ctx pointer isn't valid anymore
 	context_free( context );
@@ -255,7 +259,8 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashTable *arr_hash;
 	HashPosition pointer;
 	int i;
-
+	char *str;
+					
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables( array_ptr TSRMLS_CC );
 	
@@ -293,10 +298,9 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 					SELINUX_G(separams_values[i]) = estrdup( Z_STRVAL_PP(data) );
 					
 					// @DEBUG
-					char buf[500];
-					memset( buf, 0, sizeof(buf) );
-					sprintf( buf, "[*] Got %s => %s <br>", SELINUX_G(separams_names[i]), SELINUX_G(separams_values[i]) );
-					php_write( buf, strlen(buf) );
+					asprintf( &str, "[*] Got %s => %s <br>", SELINUX_G(separams_names[i]), SELINUX_G(separams_values[i]) );
+					php_write( str, strlen(str) );
+					free(str);
 					
 					// Hide <selinux_param>
 					zend_hash_del(arr_hash, key, strlen(key) + 1);
