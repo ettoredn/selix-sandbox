@@ -8,13 +8,16 @@ domain_type( php_t )
 domain_dyntrans_type( php_t )
 
 type php_exec_t;
-init_daemon_domain(php_t,php_exec_t)
+init_daemon_domain( php_t, php_exec_t )
 
 type php_log_t;
 logging_log_file( php_log_t )
 
 type php_tmp_t;
 files_tmp_file( php_tmp_t )
+
+type php_pid_t;
+files_pid_file( php_pid_t )
 
 type sephp_php_t;
 domain_type( sephp_php_t )
@@ -31,3 +34,18 @@ role system_r types php_t;
 allow php_t php_log_t:file { read_file_perms append_file_perms };
 allow php_t php_tmp_t:file manage_file_perms;
 files_tmp_filetrans( php_t, php_tmp_t, file )
+
+# /var/run
+files_pid_filetrans(php_t, var_run_t, file)
+allow php_t php_pid_t:file unlink;
+
+dev_read_sysfs( php_t )
+dev_read_rand( php_t )
+dev_read_urand( php_t )
+dev_rw_crypto( php_t )
+miscfiles_read_localization( php_t )
+
+allow php_t self:capability kill;
+allow php_t self:process { signal sigkill };
+allow php_t self:tcp_socket getopt;
+allow php_t urandom_device_t:chr_file { read open };

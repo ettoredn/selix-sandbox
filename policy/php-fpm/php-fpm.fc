@@ -4,3 +4,5 @@
 # MCS categories: <none>
 
 /usr/sbin/php5-fpm		--	gen_context(system_u:object_r:php_exec_t,s0)
+/var/log/php5-fpm.log	--	gen_context(system_u:object_r:php_log_t,s0)
+/var/run/php5-fpm.pid	--	gen_context(system_u:object_r:php_pid_t,s0)
