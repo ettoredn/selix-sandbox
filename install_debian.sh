@@ -7,9 +7,10 @@ SKIP_APACHE=0
 SKIP_NGINX=0
 SKIP_PHPSELINUX=0
 SKIP_POLICY=0
+ENABLE_JIT_AUTOGLOBALS=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache] [--skip-nginx] [--skip-phpselinux] [--skip-policy]"
+	echo "Usage: $0 [--skip-apache] [--skip-nginx] [--skip-phpselinux] [--skip-policy] [--enable-jit-autoglobals]"
 	exit 1
 }
 
@@ -18,18 +19,19 @@ cwd=$( pwd )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "help,skip-apache,skip-nginx,skip-phpselinux,skip-policy" "ansph" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-phpselinux,skip-policy,enable-jit-autoglobals,help" "ansph" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
-    case "$1" in
-       --skip-apache | -a)		SKIP_APACHE=1;shift;;
-       --skip-nginx | -n)		SKIP_NGINX=1;shift;;
-       --skip-phpselinux | -s)	SKIP_PHPSELINUX=1;shift;;
-       --skip-policy | -p)		SKIP_POLICY=1;shift;;
-       --help | -h) usage;;
-       --) shift;break;;
-    esac
+	case "$1" in
+		--skip-apache | -a)			SKIP_APACHE=1;shift;;
+		--skip-nginx | -n)			SKIP_NGINX=1;shift;;
+		--skip-phpselinux | -s)		SKIP_PHPSELINUX=1;shift;;
+		--skip-policy | -p)			SKIP_POLICY=1;shift;;
+		--enable-jit-autoglobals)	ENABLE_JIT_AUTOGLOBALS=1;shift;;
+		--help | -h) usage;;
+		--) shift;break;;
+	esac
 done
 
 # Script must be run as root
@@ -177,5 +179,8 @@ then
 	
 	echo -e "\nLoading php5-selinux module ..."
 	echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
+	if (( ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
+		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selinux.ini" || exit 1
+	fi
 	/etc/init.d/php5-fpm restart || exit 1
 fi

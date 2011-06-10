@@ -127,18 +127,35 @@ PHP_MINFO_FUNCTION(selinux)
 
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC)
 {
+	zend_bool jit_initialization = (PG(auto_globals_jit) && !PG(register_globals) && !PG(register_long_arrays));
 	char *str;
+	int ret;
 	
 	if (is_selinux_enabled() < 1)
 		return old_zend_compile_file( file_handle, type TSRMLS_CC );
+	
+	/*
+	 * With jit initialization of global variables enabled (default setting)
+	 * it is not possible to get environment variables before executing a script that uses them.
+	 * In such case, it calls original zend_compile bypassing SELinux checks.
+	 */
+	if (jit_initialization)
+		return old_zend_compile_file( file_handle, type TSRMLS_CC );
 
 	// Forces import of environment variables
-	php_request_startup_for_hook(TSRMLS_C);
-
+	ret = php_request_startup_for_hook(TSRMLS_C);
+	if (ret == FAILURE)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "php_request_startup_for_hook() error<br>");
+		return;
+	}
+	
 	// @DEBUG
 	asprintf( &str, "[*] Compiling %s <br>", file_handle->filename );
 	php_write( str, strlen(str) );
 	free(str);
+	
+	// @TODO zend_compile SELinux-aware
 	
 	return old_zend_compile_file( file_handle, type TSRMLS_CC );
 }
@@ -199,7 +216,7 @@ int set_context( char *domain, char *range )
 	// Get current context
 	if (getcon( &current_ctx ) < 0)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "getcon() failed");
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "getcon() failed");
 		return -1;
 	}
 	
@@ -207,13 +224,13 @@ int set_context( char *domain, char *range )
 	context = context_new( current_ctx );
 	if (!context)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "context_new() failed");
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_new() failed");
 		freecon( current_ctx );
 		return -1;
 	}
 	
 	// @DEBUG
-	asprintf( &str, "[*] SELinux current context: %s<br>", current_ctx );
+	asprintf( &str, "[SC] Current context: %s<br>", current_ctx );
 	php_write( str, strlen(str) );
 	free(str);
 	
@@ -227,7 +244,7 @@ int set_context( char *domain, char *range )
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "context_str() failed");
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_str() failed");
 		context_free( context );		
 		return -1;
 	}
@@ -235,13 +252,13 @@ int set_context( char *domain, char *range )
 	// Set new context
 	if (setcon( new_ctx ) < 0)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "setcon() failed");
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "setcon() failed");
 		context_free( context );
 		return -1;
 	}
 	
 	// @DEBUG
-	asprintf( &str, "[*] SELinux new context: <b>%s</b><br>", new_ctx );
+	asprintf( &str, "[SC] New context: %s<br>", new_ctx );
 	php_write( str, strlen(str) );
 	free(str);
 	
@@ -260,11 +277,11 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashPosition pointer;
 	int i;
 	char *str;
-					
+
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables( array_ptr TSRMLS_CC );
 	
-	if (is_selinux_enabled() < 1)
+	if (is_selinux_enabled() < 1 || !array_ptr)
 		return;
 	
 	arr_hash = Z_ARRVAL_P(array_ptr);
