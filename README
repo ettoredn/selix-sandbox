@@ -8,7 +8,7 @@ PHP settings suggested:
 	error_log = /var/log/php_errors.log
 
 Installation instruction:
-	1. > git clone ssh://git@github.com:ettoredn/sephp-sandbox.git sephp-sandbox && cd sephp-sandbox
+	1. > git clone git://github.com/ettoredn/sephp-sandbox.git sephp-sandbox && cd sephp-sandbox
 	2a. Debian users on a pristine Debian 6 installation
 		> sudo ./install_debian.sh
 	2b. Non-Debian users check what install_debian.sh does and adapt it to your system (sorry)
