@@ -39,6 +39,7 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC);
 zend_op_array *(*old_zend_compile_file)(zend_file_handle *file_handle, int type TSRMLS_DC);
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
+void *do_zend_compile_file( void *data );
 void *do_zend_execute( void *data );
 int set_context( char *domain, char *range );
 
@@ -153,9 +154,15 @@ PHP_MINFO_FUNCTION(selinux)
 	php_info_print_table_end();
 }
 
+/*
+ * zend_compile_file() handler
+ */
 zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC)
 {
 	zend_bool jit_initialization = (PG(auto_globals_jit) && !PG(register_globals) && !PG(register_long_arrays));
+	zend_compile_args args;
+	void *compiled_op_array;
+	pthread_t execute_thread;
 	char *str;
 	
 	if (jit_initialization)
@@ -170,15 +177,39 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 	php_write( str, strlen(str) );
 	free(str);
 	
-	// @TODO zend_compile SELinux-aware
+	args.file_handle = file_handle;
+	args.type = type;
+	if (pthread_create( &execute_thread, NULL, do_zend_compile_file, &args ))
+	{
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
+		return;
+	}
+	if (pthread_join( execute_thread, &compiled_op_array ))
+	{
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_join() error");
+		return;
+	}
 	
-	return old_zend_compile_file( file_handle, type TSRMLS_CC );
+	return (zend_op_array *)compiled_op_array;
+}
+
+/*
+ * Executed in a thread.
+ * It uses selinux_set_domain in order to transition to the proper security domain,
+ * then calls zend_execute()
+ */
+void *do_zend_compile_file( void *data )
+{
+	zend_compile_args *args = (zend_compile_args *)data;
+	
+	set_context( SELINUX_G(separams_values[PARAM_DOMAIN_IDX]), SELINUX_G(separams_values[PARAM_RANGE_IDX]) );
+	
+	return old_zend_compile_file( args->file_handle, args->type TSRMLS_CC );
 }
 
 
 /*
- * struct zend_op_array 	@ Zend/zend_compile.h:191
- * struct zend_execute_data @ Zend/zend_compile.h:308
+ * zend_execute() handler
  */
 void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
@@ -204,7 +235,11 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
 		return;
 	}
-	pthread_join( execute_thread, NULL );
+	if (pthread_join( execute_thread, NULL ))
+	{
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_join() error");
+		return;
+	}
 	
 	nesting = 0;
 }

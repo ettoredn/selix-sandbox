@@ -39,6 +39,11 @@ extern zend_module_entry selinux_module_entry;
 #include "TSRM.h"
 #endif
 
+typedef struct _zend_compile_args {
+	zend_file_handle *file_handle;
+	int type;
+} zend_compile_args;
+
 PHP_MINIT_FUNCTION(selinux);
 PHP_MSHUTDOWN_FUNCTION(selinux);
 PHP_RINIT_FUNCTION(selinux);
