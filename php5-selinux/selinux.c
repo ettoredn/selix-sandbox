@@ -92,7 +92,7 @@ PHP_MINIT_FUNCTION(selinux)
 	
 	/* 
 	 * auto_globals_jit needs to be off in order to be able to get environment variables
-	 * before zend_compile and zned_execute calls.
+	 * before zend_compile and zend_execute calls.
 	 * http://www.php.net/manual/en/ini.core.php#ini.auto-globals-jit
 	 */
 	if (jit_initialization)
