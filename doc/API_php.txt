@@ -1,4 +1,4 @@
-# find -type f -print0 | xargs -0 egrep -n -w '^(extern{1} PHPAPI|PHPAPI)' | cut -d"/" -f2- | egrep '[[:alnum:]]+\.h:' | sed 's/:[0-9]*//'
+# find -type f -name "*.h" -print0 | xargs -0 egrep -w '^(extern{1} PHPAPI|PHPAPI)' | cut -d"/" -f2-
 php_scandir.h:PHPAPI int php_scandir(const char *dirname, struct dirent **namelist[], int (*selector) (const struct dirent *entry), int (*compare) (const struct dirent **a, const struct dirent **b));
 php_scandir.h:PHPAPI int php_alphasort(const struct dirent **a, const struct dirent **b);
 snprintf.h:PHPAPI int ap_php_slprintf(char *buf, size_t len, const char *format,...);

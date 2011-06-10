@@ -1,4 +1,4 @@
-# find -type f -print0 | xargs -0 egrep -n -w '^(extern{1} ZEND_API|ZEND_API)' | cut -d"/" -f2- | egrep '[[:alnum:]]+\.h:' | sed 's/:[0-9]*//'
+# find -type f -name "*.h" -print0 | xargs -0 egrep -w '^(extern{1} ZEND_API|ZEND_API)' | cut -d"/" -f2-
 zend_ptr_stack.h:ZEND_API void zend_ptr_stack_init(zend_ptr_stack *stack);
 zend_ptr_stack.h:ZEND_API void zend_ptr_stack_init_ex(zend_ptr_stack *stack, zend_bool persistent);
 zend_ptr_stack.h:ZEND_API void zend_ptr_stack_n_push(zend_ptr_stack *stack, int count, ...);
