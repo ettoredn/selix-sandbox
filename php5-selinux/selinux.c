@@ -72,10 +72,32 @@ ZEND_GET_MODULE(selinux)
 
 PHP_MINIT_FUNCTION(selinux)
 {
+	int ret;
+	zend_bool jit_initialization = (PG(auto_globals_jit) && !PG(register_globals) && !PG(register_long_arrays));
+
 	// Adds FastCGI parameters to catch
 	SELINUX_G(separams_names[PARAM_DOMAIN_IDX]) = PARAM_DOMAIN_NAME;
 	SELINUX_G(separams_names[PARAM_RANGE_IDX]) = PARAM_RANGE_NAME;
+
+	ret = is_selinux_enabled();
+	if (!ret)
+	{
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "SELinux is not enabled on the system! This causes PHP-SELinux to be off");
+		return SUCCESS;
+	}
+	else if (ret < 0)
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "is_selinux_enabled() failed. Check your SELinux installation" );		
 	
+	// SELinux enabled
+	
+	/* 
+	 * auto_globals_jit needs to be off in order to be able to get environment variables
+	 * before zend_compile and zned_execute calls.
+	 * http://www.php.net/manual/en/ini.core.php#ini.auto-globals-jit
+	 */
+	if (jit_initialization)
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't enable PHP-SELinux support with auto_globals_jit enabled!");
+
 	return SUCCESS;
 }
 
@@ -86,6 +108,9 @@ PHP_MSHUTDOWN_FUNCTION(selinux)
 
 PHP_RINIT_FUNCTION(selinux)
 {
+	if (is_selinux_enabled() < 1)
+		return SUCCESS;
+	
 	/* Override php_import_environment_variables ( main/php_variables.c:824 ) */
 	old_php_import_environment_variables = php_import_environment_variables;
 	php_import_environment_variables = selinux_php_import_environment_variables;
@@ -110,6 +135,9 @@ PHP_RSHUTDOWN_FUNCTION(selinux)
 		if (SELINUX_G(separams_values[i]))
 			efree( SELINUX_G(separams_values[i]) );
 	
+	if (is_selinux_enabled() < 1)
+		return SUCCESS;
+	
 	// Restore handlers
 	php_import_environment_variables = old_php_import_environment_variables;
 	zend_execute = old_zend_execute;
@@ -129,26 +157,13 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 {
 	zend_bool jit_initialization = (PG(auto_globals_jit) && !PG(register_globals) && !PG(register_long_arrays));
 	char *str;
-	int ret;
 	
-	if (is_selinux_enabled() < 1)
-		return old_zend_compile_file( file_handle, type TSRMLS_CC );
-	
-	/*
-	 * With jit initialization of global variables enabled (default setting)
-	 * it is not possible to get environment variables before executing a script that uses them.
-	 * In such case, it calls original zend_compile bypassing SELinux checks.
-	 */
 	if (jit_initialization)
-		return old_zend_compile_file( file_handle, type TSRMLS_CC );
-
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Can't enable PHP-SELinux support with auto_globals_jit enabled!");
+	
 	// Forces import of environment variables
-	ret = php_request_startup_for_hook(TSRMLS_C);
-	if (ret == FAILURE)
-	{
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "php_request_startup_for_hook() error<br>");
-		return;
-	}
+ 	if (php_request_startup_for_hook(TSRMLS_C) == FAILURE)
+ 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "php_request_startup_for_hook() error<br>");
 	
 	// @DEBUG
 	asprintf( &str, "[*] Compiling %s <br>", file_handle->filename );
@@ -169,10 +184,9 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
 	// zend_execute_data *edata = EG(current_execute_data);
 	pthread_t execute_thread;
-
-	if (is_selinux_enabled() < 1)
-		return old_zend_execute( op_array TSRMLS_CC );
-		
+	
+	// Environment variables already imported during compile
+	
 	// @DEBUG
 	char *str;
 	asprintf( &str, "[*] Executing %s<br>", op_array->filename );
@@ -277,12 +291,12 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 	HashPosition pointer;
 	int i;
 	char *str;
-
+	
+	if (!array_ptr)
+		return;
+	
 	/* call php's original import as a catch-all */
 	old_php_import_environment_variables( array_ptr TSRMLS_CC );
-	
-	if (is_selinux_enabled() < 1 || !array_ptr)
-		return;
 	
 	arr_hash = Z_ARRVAL_P(array_ptr);
 	for (zend_hash_internal_pointer_reset_ex(arr_hash, &pointer ); 

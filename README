@@ -1,1 +1,13 @@
-SePHP Development Sandbox
+If you wanna play with this, keep in mind that everything is *highly experimental*.
+
+PHP settings required:
+	auto_globals_jit = Off
+	
+PHP settings suggested:
+	log_errors = On
+	error_log = /var/log/php_errors.log
+
+Installation instruction:
+	1. git clone ssh://git@github.com:ettoredn/sephp-sandbox.git sephp-sandbox && cd sephp-sandbox
+	2a. Debian users: sudo ./install_debian.sh
+	2b. Check what install_debian.sh does and do it by hand (sorry)

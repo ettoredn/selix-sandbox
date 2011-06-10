@@ -19,12 +19,12 @@ function check_extension()
 
 function show_environment()
 {
-	echo '<p class="title">$_SERVER</p><pre>';
-	var_dump( $_SERVER );
-	echo '</pre>';
-	echo '<p class="title">$_ENV</p><pre>';
-	var_dump( $_ENV );
-	echo '</pre>';
+// 	echo '<p class="title">$_SERVER</p><pre>';
+// 	var_dump( $_SERVER );
+// 	echo '</pre>';
+// 	echo '<p class="title">$_ENV</p><pre>';
+// 	var_dump( $_ENV );
+// 	echo '</pre>';
 }
 ?></body>
 </html>
