@@ -163,7 +163,7 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 	
 	// Forces import of environment variables
  	if (php_request_startup_for_hook(TSRMLS_C) == FAILURE)
- 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "php_request_startup_for_hook() error<br>");
+ 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "php_request_startup_for_hook() error");
 	
 	// @DEBUG
 	asprintf( &str, "[*] Compiling %s <br>", file_handle->filename );
@@ -223,7 +223,7 @@ void *do_zend_execute( void *data )
  */
 int set_context( char *domain, char *range )
 {
-	security_context_t current_ctx, new_ctx, newraw_ctx;
+	security_context_t current_ctx, new_ctx;
 	context_t context;
 	char *str;
 	
@@ -248,8 +248,6 @@ int set_context( char *domain, char *range )
 	php_write( str, strlen(str) );
 	free(str);
 	
-	freecon( current_ctx );
-	
 	// Sets values for the new context
 	context_type_set( context, domain );
 	context_range_set( context,  range );
@@ -259,14 +257,28 @@ int set_context( char *domain, char *range )
 	if (!new_ctx)
 	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_str() failed");
+		freecon( current_ctx );
 		context_free( context );		
 		return -1;
+	}
+	
+	if (!strcmp( current_ctx, new_ctx ))
+	{
+		// @DEBUG
+		asprintf( &str, "[SC] No context chages made<br>", new_ctx );
+		php_write( str, strlen(str) );
+		free(str);
+
+		context_free( context );
+		freecon( current_ctx );
+		return 0;
 	}
 
 	// Set new context
 	if (setcon( new_ctx ) < 0)
 	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "setcon() failed");
+		freecon( current_ctx );
 		context_free( context );
 		return -1;
 	}
@@ -278,6 +290,7 @@ int set_context( char *domain, char *range )
 	
 	// Free previously allocated context_t and so the new_ctx pointer isn't valid anymore
 	context_free( context );
+	freecon( current_ctx );
 	return 0;
 }
 
