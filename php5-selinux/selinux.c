@@ -182,14 +182,20 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
  */
 void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 {
-	// zend_execute_data *edata = EG(current_execute_data);
+	static int nesting = 0;
 	pthread_t execute_thread;
+	char *str;
+	
+	nesting++;
+	
+	// Nested calls are already executed in proper security context
+	if (nesting > 1)
+		return old_zend_execute( op_array TSRMLS_CC );
 	
 	// Environment variables already imported during compile
 	
 	// @DEBUG
-	char *str;
-	asprintf( &str, "[*] Executing %s<br>", op_array->filename );
+	asprintf( &str, "[*] Executing in proper security context %s<br>", op_array->filename );
 	php_write( str, strlen(str) );
 	free(str);
 	
@@ -198,8 +204,9 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
 		return;
 	}
-	
 	pthread_join( execute_thread, NULL );
+	
+	nesting = 0;
 }
 
 /*
@@ -342,9 +349,9 @@ void selinux_php_import_environment_variables(zval *array_ptr TSRMLS_DC)
 					SELINUX_G(separams_values[i]) = estrdup( Z_STRVAL_PP(data) );
 					
 					// @DEBUG
-					asprintf( &str, "[*] Got %s => %s <br>", SELINUX_G(separams_names[i]), SELINUX_G(separams_values[i]) );
-					php_write( str, strlen(str) );
-					free(str);
+					// asprintf( &str, "[*] Got %s => %s <br>", SELINUX_G(separams_names[i]), SELINUX_G(separams_values[i]) );
+					// php_write( str, strlen(str) );
+					// free(str);
 					
 					// Hide <selinux_param>
 					zend_hash_del(arr_hash, key, strlen(key) + 1);
