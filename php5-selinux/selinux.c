@@ -217,10 +217,8 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 	pthread_t execute_thread;
 	char *str;
 	
-	nesting++;
-	
 	// Nested calls are already executed in proper security context
-	if (nesting > 1)
+	if (nesting++ > 0)
 		return old_zend_execute( op_array TSRMLS_CC );
 	
 	// Environment variables already imported during compile
