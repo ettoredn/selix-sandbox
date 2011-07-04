@@ -180,16 +180,11 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 	args.file_handle = file_handle;
 	args.type = type;
 	if (pthread_create( &execute_thread, NULL, do_zend_compile_file, &args ))
-	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
-		return;
-	}
+
 	if (pthread_join( execute_thread, &compiled_op_array ))
-	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_join() error");
-		return;
-	}
-	
+
 	return (zend_op_array *)compiled_op_array;
 }
 
@@ -229,15 +224,10 @@ void selinux_zend_execute(zend_op_array *op_array TSRMLS_DC)
 	free(str);
 	
 	if (pthread_create( &execute_thread, NULL, do_zend_execute, op_array ))
-	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_create() error");
-		return;
-	}
+
 	if (pthread_join( execute_thread, NULL ))
-	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "pthread_join() error");
-		return;
-	}
 	
 	nesting = 0;
 }
@@ -278,9 +268,8 @@ int set_context( char *domain, char *range )
 	context = context_new( current_ctx );
 	if (!context)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_new() failed");
 		freecon( current_ctx );
-		return -1;
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_new() failed");
 	}
 	
 	// @DEBUG
@@ -296,10 +285,9 @@ int set_context( char *domain, char *range )
 	new_ctx = context_str( context );
 	if (!new_ctx)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_str() failed");
 		freecon( current_ctx );
-		context_free( context );		
-		return -1;
+		context_free( context );
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "context_str() failed");
 	}
 	
 	if (!strcmp( current_ctx, new_ctx ))
@@ -317,10 +305,9 @@ int set_context( char *domain, char *range )
 	// Set new context
 	if (setcon( new_ctx ) < 0)
 	{
-		php_error_docref(NULL TSRMLS_CC, E_ERROR, "setcon() failed");
 		freecon( current_ctx );
 		context_free( context );
-		return -1;
+		php_error_docref(NULL TSRMLS_CC, E_ERROR, "setcon() failed");
 	}
 	
 	// @DEBUG

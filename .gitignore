@@ -10,6 +10,9 @@
 # SVN
 .svn/
 
+# TextMate project
+*.tmproj
+
 # Project
 test/
 policy/php-fpm/php-fpm.pp
