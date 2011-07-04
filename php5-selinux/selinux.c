@@ -259,10 +259,7 @@ int set_context( char *domain, char *range )
 	
 	// Get current context
 	if (getcon( &current_ctx ) < 0)
-	{
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "getcon() failed");
-		return -1;
-	}
 	
 	// Allocates a new context_t (i.e. malloc)
 	context = context_new( current_ctx );
