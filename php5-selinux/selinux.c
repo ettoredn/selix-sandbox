@@ -191,7 +191,7 @@ zend_op_array *selinux_zend_compile_file(zend_file_handle *file_handle, int type
 /*
  * Executed in a thread.
  * It uses selinux_set_domain in order to transition to the proper security domain,
- * then calls zend_execute()
+ * then calls zend_compile_file()
  */
 void *do_zend_compile_file( void *data )
 {
