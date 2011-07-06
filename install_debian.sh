@@ -103,7 +103,8 @@ then
 	echo -e "Enabling SePHP Apache virtualhost ..."
 	cat "$cwd/configs/apache/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/apache2/sites-available/sephp-vhost.conf
-	a2ensite sephp-vhost.conf && /etc/init.d/apache2 restart || exit 1
+	a2ensite sephp-vhost.conf || exit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || exit 1
 fi
 
 ### Nginx configuration ###
@@ -118,7 +119,7 @@ then
 	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
 	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
-	/etc/init.d/nginx restart || exit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || exit 1
 fi
 
 ### policy module ###
@@ -182,5 +183,5 @@ then
 	if (( ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
 		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selinux.ini" || exit 1
 	fi
-	/etc/init.d/php5-fpm restart || exit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || exit 1
 fi
