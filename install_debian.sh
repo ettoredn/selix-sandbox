@@ -10,7 +10,7 @@ SKIP_POLICY=0
 ENABLE_JIT_AUTOGLOBALS=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache] [--skip-nginx] [--skip-phpselinux] [--skip-policy] [--enable-jit-autoglobals]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-phpselinux|-s] [--skip-policy|-p] [--enable-jit-autoglobals]"
 	exit 1
 }
 
