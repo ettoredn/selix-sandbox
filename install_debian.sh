@@ -149,6 +149,10 @@ fi
 if (( $SKIP_PHPSELINUX == 0 ))
 then
 	echo -e "\nBuilding selix PHP extension ..."
+	
+	if [[ ! -d selix ]] ; then
+		echo "*** You need to clone selix project into a directory named selix" >&2 && exit 1
+	fi
 	cd selix
 	buildfail=0
 	
