@@ -148,8 +148,8 @@ fi
 ### php5-selinux module ###
 if (( $SKIP_PHPSELINUX == 0 ))
 then
-	echo -e "\nBuilding php5-selinux module ..."
-	cd php5-selinux
+	echo -e "\nBuilding selix PHP extension ..."
+	cd selix
 	buildfail=0
 	
 	if (( buildfail == 0 )) ; then
@@ -165,7 +165,7 @@ then
 	# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
 	# with libselinux (-lselinux) seems not working. Perhaps there's an incompatibility between
 	# phpize related tools and autotools in Debian 6.
-	sed -i '1 i SELINUX_SHARED_LIBADD = -lselinux' Makefile
+	sed -i '1 i SELIX_SHARED_LIBADD = -lselinux' Makefile
 	
 	if (( buildfail == 0 )) ; then 
 		echo -e "\tExecuting make ..."
@@ -179,9 +179,9 @@ then
 	fi
 	
 	echo -e "\nLoading php5-selinux module ..."
-	echo "extension=$cwd/php5-selinux/modules/selinux.so" > "/etc/php5/conf.d/selinux.ini" || exit 1
+	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || exit 1
 	if (( ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
-		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selinux.ini" || exit 1
+		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || exit 1
 	fi
 	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || exit 1
 fi

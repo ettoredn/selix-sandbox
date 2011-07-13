@@ -11,7 +11,7 @@ show_environment();
 
 function check_extension()
 {
-	if (extension_loaded("selinux"))
+	if (extension_loaded("selix"))
 		echo "<p>[ OK ] SELinux extension loaded</p>";
 	else
 		die("<p class='red'>[ERROR] SELinux extension not loaded</p>");
