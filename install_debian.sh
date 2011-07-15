@@ -5,12 +5,13 @@ REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi n
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
 SKIP_NGINX=0
-SKIP_PHPSELINUX=0
+SKIP_SELIX=0
 SKIP_POLICY=0
-ENABLE_JIT_AUTOGLOBALS=0
+PHP_ENABLE_JIT_AUTOGLOBALS=0
+SELIX_FORCE_CONTEXT_CHANGE=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-phpselinux|-s] [--skip-policy|-p] [--enable-jit-autoglobals]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--force-context-change] [--enable-jit-autoglobals]"
 	exit 1
 }
 
@@ -19,16 +20,17 @@ cwd=$( pwd )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-phpselinux,skip-policy,enable-jit-autoglobals,help" "ansph" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,force-context-change,enable-jit-autoglobals,help" "ansph" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
 	case "$1" in
 		--skip-apache | -a)			SKIP_APACHE=1;shift;;
 		--skip-nginx | -n)			SKIP_NGINX=1;shift;;
-		--skip-phpselinux | -s)		SKIP_PHPSELINUX=1;shift;;
+		--skip-selix | -s)			SKIP_SELIX=1;shift;;
 		--skip-policy | -p)			SKIP_POLICY=1;shift;;
-		--enable-jit-autoglobals)	ENABLE_JIT_AUTOGLOBALS=1;shift;;
+		--enable-jit-autoglobals)	PHP_ENABLE_JIT_AUTOGLOBALS=1;shift;;
+		--force-context-change)		SELIX_FORCE_CONTEXT_CHANGE=1;shift;;
 		--help | -h) usage;;
 		--) shift;break;;
 	esac
@@ -146,7 +148,7 @@ then
 fi
 
 ### php5-selinux module ###
-if (( $SKIP_PHPSELINUX == 0 ))
+if (( $SKIP_SELIX == 0 ))
 then
 	echo -e "\nBuilding selix PHP extension ..."
 	
@@ -184,8 +186,11 @@ then
 	
 	echo -e "\nLoading php5-selinux module ..."
 	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || exit 1
-	if (( ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
+	if (( PHP_ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
 		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || exit 1
+	fi
+	if (( SELIX_FORCE_CONTEXT_CHANGE == 1 )) ; then
+		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || exit 1
 	fi
 	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || exit 1
 fi
