@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Configuration variables
-PHP_MODULES_PATH="/usr/lib/php5/20090626"
 REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk"
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
@@ -15,8 +14,16 @@ function usage {
 	exit 1
 }
 
+function quit {
+	cd "$old_cwd"
+	if (( $1 > 0 )) ; then echo -e "\n*** Aborted due to previous errors" ; fi
+	exit $1
+}
+
 # Initialize variables
-cwd=$( pwd )
+old_cwd=$( pwd )
+abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
+cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
@@ -36,16 +43,19 @@ do
 	esac
 done
 
+# Change to script directory
+cd "$cwd"
+
 # Script must be run as root
 if [[ $( whoami ) != "root" ]]
 then
-	echo "*** This script must be run as root" >&2 && exit 1
+	echo "*** This script must be run as root" >&2 && quit 1
 fi
 
 # Check OS
 if [[ ! -f /etc/debian_version || $( cat /etc/debian_version | cut -d. -f1 ) != "6" ]]
 then
-	echo "*** This script needs to be run on Debian Squeeze 6" >&2 && exit 1
+	echo "*** This script needs to be run on Debian Squeeze 6" >&2 && quit 1
 fi
 
 # Check packages
@@ -63,14 +73,14 @@ do
 done
 if (( MISSING_PKGS != 0 ))
 then
-	echo "*** Packages missing. Please install them to continue." >&2 && exit 1
+	echo "*** Packages missing. Please install them to continue." >&2 && quit 1
 fi
 
 # Check if SELinux is active
 $( selinuxenabled )
 if (( $? != 0 ))
 then
-	echo "*** SELinux not enabled. Please enable it by running selinux-activate ." >&2 && exit 1
+	echo "*** SELinux not enabled. Please enable it by running selinux-activate ." >&2 && quit 1
 fi
 
 ### Apache configuration ###
@@ -90,12 +100,12 @@ then
 	done
 	if (( MISSING_MODS != 0 ))
 	then
-		echo "*** Some required Apache modules are disabled. Please enable them to continue." >&2 && exit 1
+		echo "*** Some required Apache modules are disabled. Please enable them to continue." >&2 && quit 1
 	fi
 	
 	# Include SePHP configuration
 	echo -e "\nAdding SePHP Apache configuration ..."
-	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || exit 1
+	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || quit 1
 
 	# Disable default Apache virtualhost
 	echo -e "Disabling default Apache virtualhost ..."
@@ -105,8 +115,8 @@ then
 	echo -e "Enabling SePHP Apache virtualhost ..."
 	cat "$cwd/configs/apache/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/apache2/sites-available/sephp-vhost.conf
-	a2ensite sephp-vhost.conf || exit 1
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || exit 1
+	a2ensite sephp-vhost.conf || quit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || quit 1
 fi
 
 ### Nginx configuration ###
@@ -121,14 +131,14 @@ then
 	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
 	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || exit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || quit 1
 fi
 
 ### policy module ###
 if (( $SKIP_POLICY == 0 ))
 then
 	echo -e "\nBuilding FPM policy module ..."
-	cd policy/php-fpm
+	cd policy/php-fpm || quit 1
 	buildfail=0
 	
 	if (( buildfail == 0 )) ; then
@@ -139,11 +149,11 @@ then
 
 	if (( buildfail != 0 ))
 	then
-		echo "*** Build of FPM policy module failed." >&2 && exit 1
+		echo "*** Build of FPM policy module failed." >&2 && quit 1
 	fi
 	
 	echo -e "\tLoading policy module ..."
-	semodule -i php-fpm.pp || exit 1
+	semodule -i php-fpm.pp || quit 1
 	cd $cwd
 fi
 
@@ -153,7 +163,7 @@ then
 	echo -e "\nBuilding selix PHP extension ..."
 	
 	if [[ ! -d selix ]] ; then
-		echo "*** You need to clone selix project into a directory named selix" >&2 && exit 1
+		echo "*** You need to clone selix project into a directory named selix" >&2 && quit 1
 	fi
 	cd selix
 	buildfail=0
@@ -181,16 +191,18 @@ then
 	cd $cwd
 	if (( buildfail != 0 ))
 	then
-		echo "*** Build of php5-selinux module failed." >&2 && exit 1
+		echo "*** Build of php5-selinux module failed." >&2 && quit 1
 	fi
 	
 	echo -e "\nLoading php5-selinux module ..."
-	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || exit 1
+	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || quit 1
 	if (( PHP_ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
-		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || exit 1
+		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
 	if (( SELIX_FORCE_CONTEXT_CHANGE == 1 )) ; then
-		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || exit 1
+		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || exit 1
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || quit 1
 fi
+
+quit 0

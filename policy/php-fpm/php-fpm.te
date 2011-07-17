@@ -6,6 +6,7 @@ attribute php_domains;
 type php_t;
 domain_type( php_t )
 domain_dyntrans_type( php_t )
+role system_r types php_t;
 
 type php_exec_t;
 init_daemon_domain( php_t, php_exec_t )
@@ -27,9 +28,6 @@ php_base( sephp_php_t )
 # Needed by setcon()
 allow php_t self:process { setcurrent dyntransition };
 
-# php_t must be in system_r role
-role system_r types php_t;
-
 # Log files
 allow php_t php_log_t:file { read_file_perms append_file_perms };
 allow php_t php_tmp_t:file manage_file_perms;
@@ -49,3 +47,9 @@ allow php_t self:capability kill;
 allow php_t self:process { signal sigkill };
 allow php_t self:tcp_socket getopt;
 allow php_t urandom_device_t:chr_file { read open };
+
+# Networking
+allow php_t self:unix_dgram_socket { create_socket_perms sendto };
+allow php_t self:unix_stream_socket { create_stream_socket_perms connectto };
+allow php_t self:tcp_socket create_stream_socket_perms;
+allow php_t self:udp_socket create_socket_perms;
