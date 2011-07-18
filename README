@@ -4,6 +4,7 @@ PHP settings required:
 	auto_globals_jit = Off
 	
 PHP settings suggested:
+	error_reporting = E_ALL | E_STRICT
 	log_errors = On
 	error_log = /var/log/php_errors.log
 

@@ -7,14 +7,25 @@
 <body><?php
 
 check_extension();
-show_environment();
+check_environment();
 
 function check_extension()
 {
 	if (extension_loaded("selix"))
 		echo "<p>[ OK ] SELinux extension loaded</p>";
 	else
-		die("<p class='red'>[ERROR] SELinux extension not loaded</p>");
+		die("<p class='red'>[ ERROR ] SELinux extension not loaded</p>");
+}
+
+function check_environment()
+{
+	if (array_key_exists('SELINUX_DOMAIN', $_SERVER) ||
+			array_key_exists('SELINUX_RANGE', $_SERVER) ||
+			array_key_exists('REDIRECT_SELINUX_DOMAIN', $_SERVER) ||
+			array_key_exists('REDIRECT_SELINUX_RANGE', $_SERVER))
+		echo "<p class='red'>[ ERROR ] SELinux security context data exposed in environment variables</p>";
+	else
+		echo "<p>[ OK ] SELinux security context data not exposed in environment variables</p>";
 }
 
 function show_environment()
