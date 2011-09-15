@@ -8,9 +8,10 @@ SKIP_SELIX=0
 SKIP_POLICY=0
 PHP_ENABLE_JIT_AUTOGLOBALS=0
 SELIX_FORCE_CONTEXT_CHANGE=0
+SELIX_VERBOSE=1
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--force-context-change] [--enable-jit-autoglobals]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose]"
 	exit 1
 }
 
@@ -27,7 +28,7 @@ cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,force-context-change,enable-jit-autoglobals,help" "ansph" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,force-context-change,enable-jit-autoglobals,disable-verbose,help" "ansph" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
@@ -38,6 +39,7 @@ do
 		--skip-policy | -p)			SKIP_POLICY=1;shift;;
 		--enable-jit-autoglobals)	PHP_ENABLE_JIT_AUTOGLOBALS=1;shift;;
 		--force-context-change)		SELIX_FORCE_CONTEXT_CHANGE=1;shift;;
+		--disable-verbose)			SELIX_VERBOSE=0;shift;;
 		--help | -h) usage;;
 		--) shift;break;;
 	esac
@@ -201,6 +203,9 @@ then
 	fi
 	if (( SELIX_FORCE_CONTEXT_CHANGE == 1 )) ; then
 		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
+	fi
+	if (( SELIX_VERBOSE == 1 )) ; then
+		echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
 	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || quit 1
 fi
