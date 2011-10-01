@@ -6,3 +6,4 @@
 /usr/sbin/php5-fpm		--	gen_context(system_u:object_r:php_exec_t,s0)
 /var/log/php5-fpm.log	--	gen_context(system_u:object_r:php_log_t,s0)
 /var/run/php5-fpm.pid	--	gen_context(system_u:object_r:php_pid_t,s0)
+/etc/php(5)?(/.*)?			gen_context(system_u:object_r:php_config_t,s0)
