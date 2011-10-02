@@ -18,3 +18,8 @@ test/
 policy/php-fpm/php-fpm.pp
 policy/php-fpm/tmp/
 selix/
+mod_selinux/.deps
+mod_selinux/.libs/
+mod_selinux/mod_selinux.l*
+mod_selinux/mod_selinux.o
+mod_selinux/mod_selinux.slo
