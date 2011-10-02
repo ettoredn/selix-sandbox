@@ -13,6 +13,7 @@ interface(`php_webapp',`
 	gen_require(`
 		attribute php_domains;
 		type php_t, php_config_t, php_log_t;
+		type $1, $2, $3;
 	')
 
 	typeattribute $1 php_domains;

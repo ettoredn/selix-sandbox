@@ -17,8 +17,7 @@ interface(`apache_base_webapp',`
 		type httpd_t;
 		type httpd_config_t;
 		type httpd_log_t;
-		type httpd_sys_content_t;
-		type httpd_suexec_exec_t;
+		type $1;
 	')
 	########################################
 	#
@@ -51,14 +50,13 @@ interface(`apache_base_webapp',`
 	miscfiles_read_localization($1)
 	miscfiles_read_fonts($1)
 	miscfiles_read_certs($1)
+	
+	# Search sys content
 	apache_search_sys_content($1)
 	
 	# Search home directories
 	userdom_search_user_home_content( $1 )
 
-	# allow $1 httpd_t:shm rw_shm_perms;
-	# allow $1 httpd_t:sem rw_sem_perms;
-	
 	# allow to read the web servers config files
 	# allow $1 httpd_config_t:dir list_dir_perms;
 	# read_files_pattern($1, httpd_config_t, httpd_config_t)
@@ -71,33 +69,6 @@ interface(`apache_base_webapp',`
 	# read_files_pattern($1, httpd_log_t, httpd_log_t)
 	# read_lnk_files_pattern($1, httpd_log_t, httpd_log_t)
 	# logging_log_filetrans($1, httpd_log_t, file)
-	
-	# Read-only accesses to system contents
-	# allow $1 httpd_sys_content_t:dir list_dir_perms;
-	# read_files_pattern($1, httpd_sys_content_t, httpd_sys_content_t)
-	# read_lnk_files_pattern($1, httpd_sys_content_t, httpd_sys_content_t)
-	
-	# /proc
-	# allow $1 httpd_t:dir list_dir_perms;
-	# kernel_read_kernel_sysctls($1)
-	# kernel_read_system_state($1)
-	# filesystems
-	# fs_getattr_all_fs($1)
-	# fs_search_auto_mountpoints($1)
-	
-	# misc permissions
-	# domain_use_interactive_fds($1)
-	
-	# files_read_usr_files($1)
-	# files_list_mnt($1)
-	# files_search_spool($1)
-	# files_read_var_lib_files($1)
-	# files_search_home($1)
-	# files_getattr_home_dir($1)
-	# for modules that want to access /etc/mtab
-	# files_read_etc_runtime_files($1)
-	# Allow httpd_t to have access to files such as nisswitch.conf
-	# files_read_etc_files($1)
 	
 	# libs_read_lib_files($1)
 	# seutil_dontaudit_search_config($1)

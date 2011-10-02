@@ -1,44 +1,24 @@
-policy_module(mod_selinux, 2.2)
+policy_module(mod_selinux, 0.1)
 
-# ------------------------------------------
-# Apache/SELinux plus security policy module
-# ------------------------------------------
-
-########################################
-#
+#############################
 # Declarations
-#
-
-# domains to perform as a web server process
+#############################
 attribute httpd_server_domains;
 
-# domains for unauthorized clients
-# type anon_webapp_t;
-# domain_type( anon_webapp_t )
-# apache_base_webapp( anon_webapp_t )
-
-# domains for authorized clients (user)
-# type sephp_httpd_t;
-# domain_type( sephp_httpd_t )
-# apache_base_webapp( sephp_httpd_t )
-# apache_user_webapp( sephp, sephp_httpd_t )
-
-########################################
-#
-# Local policies for Apache/httpd server
-#  (todo: it should be moved to apache.te)
-#
-
+#############################
+# Local policies
+#############################
 gen_require(`
 	type httpd_t;
 	type httpd_exec_t;
 ')
 
-domain_dyntrans_type( httpd_t )
-allow httpd_t self : process { setcurrent };
-
 typeattribute httpd_t httpd_server_domains;
 
+# Allow httpd_t set its context
+domain_dyntrans_type( httpd_t )
+
+allow httpd_t self:process { setcurrent };
  
 # ifdef(`enable_mcs',`
 # 	init_ranged_daemon_domain(httpd_t,httpd_exec_t,s0 - mcs_systemhigh)

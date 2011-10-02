@@ -88,19 +88,3 @@ userdom_search_user_home_content( php_t )
 userdom_dontaudit_exec_user_home_content_files( php_t )
 # suppress nsswitch.conf open/read
 files_read_etc_files( php_t )
-
-type sephp_httpd_t;
-domain_type( sephp_httpd_t )
-type httpd_sephp_content_t;
-files_type( httpd_sephp_content_t )
-type httpd_sephp_htaccess_t;
-files_type( httpd_sephp_htaccess_t )
-
-type sephp_php_t;
-domain_type( sephp_php_t )
-type php_sephp_script_t;
-files_type( php_sephp_script_t )
-
-php_webapp( sephp_php_t, php_sephp_script_t, httpd_sephp_content_t )
-apache_base_webapp( sephp_httpd_t )
-apache_user_webapp( sephp_httpd_t, httpd_sephp_content_t, httpd_sephp_htaccess_t, php_sephp_script_t )

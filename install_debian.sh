@@ -168,6 +168,9 @@ then
 	echo -e "\tLoading PHP-FPM policy module ..."
 	semodule -r php-fpm &>/dev/null
 	semodule -i php-fpm.pp >/dev/null || quit 1
+	echo -e "\tLoading virtualhosts policy module ..."
+	semodule -r virtualhosts &>/dev/null
+	semodule -i virtualhosts.pp >/dev/null || quit 1
 	cd $cwd
 fi
 
