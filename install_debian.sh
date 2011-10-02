@@ -6,12 +6,13 @@ SKIP_APACHE=0
 SKIP_NGINX=0
 SKIP_SELIX=0
 SKIP_POLICY=0
+SKIP_MOD_SELINUX=0
 PHP_ENABLE_JIT_AUTOGLOBALS=0
 SELIX_FORCE_CONTEXT_CHANGE=0
 SELIX_VERBOSE=1
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose]"
 	exit 1
 }
 
@@ -26,9 +27,12 @@ old_cwd=$( pwd )
 abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
 cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
+restart_apache=0
+restart_php=0
+restart_nginx=0
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,force-context-change,enable-jit-autoglobals,disable-verbose,help" "ansph" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,help" "anspmh" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
@@ -37,6 +41,7 @@ do
 		--skip-nginx | -n)			SKIP_NGINX=1;shift;;
 		--skip-selix | -s)			SKIP_SELIX=1;shift;;
 		--skip-policy | -p)			SKIP_POLICY=1;shift;;
+		--skip-modselinux | -m)		SKIP_MOD_SELINUX=1;shift;;
 		--enable-jit-autoglobals)	PHP_ENABLE_JIT_AUTOGLOBALS=1;shift;;
 		--force-context-change)		SELIX_FORCE_CONTEXT_CHANGE=1;shift;;
 		--disable-verbose)			SELIX_VERBOSE=0;shift;;
@@ -105,35 +110,38 @@ then
 		echo "*** Some required Apache modules are disabled. Please enable them to continue." >&2 && quit 1
 	fi
 	
+	echo -e "\nUpdating Apache configuration ..."
 	# Include SePHP configuration
-	echo -e "\nAdding SePHP Apache configuration ..."
+	echo -e "\tAdding SePHP configuration ..."
 	cp $cwd/configs/apache/conf.d/sephp.conf /etc/apache2/conf.d/ || quit 1
 
 	# Disable default Apache virtualhost
-	echo -e "Disabling default Apache virtualhost ..."
-	a2dissite default
+	echo -e "\tDisabling default Apache virtualhost ..."
+	a2dissite default >/dev/null
 
 	# Copy virtualhost into apache sites and enable it
-	echo -e "Enabling SePHP Apache virtualhost ..."
+	echo -e "\tEnabling SePHP Apache virtualhost ..."
 	cat "$cwd/configs/apache/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/apache2/sites-available/sephp-vhost.conf
-	a2ensite sephp-vhost.conf || quit 1
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || quit 1
+	a2ensite sephp-vhost.conf >/dev/null || quit 1
+	restart_apache=1
 fi
 
 ### Nginx configuration ###
 if (( $SKIP_NGINX == 0 ))
 then
+	echo -e "\nUpdating Nginx configuration ..."
+	
 	# Disable default nginx virtualhost
-	echo -e "\nDisabling default Nginx virtualhost ..."
+	echo -e "\tDisabling default Nginx virtualhost ..."
 	rm "/etc/nginx/sites-enabled/default" 2>/dev/null
 	
 	# Copy virtualhost into nginx sites and enable it
-	echo -e "Enabling SePHP Nginx virtualhost ..."
+	echo -e "\tEnabling SePHP Nginx virtualhost ..."
 	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
 	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || quit 1
+	restart_nginx=1
 fi
 
 ### policy module ###
@@ -157,6 +165,56 @@ then
 	echo -e "\tLoading policy module ..."
 	semodule -i php-fpm.pp || quit 1
 	cd $cwd
+	
+	echo -e "\nBuilding mod_selinux policy module ..."
+	cd policy/mod_selinux || quit 1
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting make ..."
+		make clean >/dev/null || buildfail=1
+		make >/dev/null || buildfail=1
+	fi
+
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of mod_selinux policy module failed." >&2 && quit 1
+	fi
+	
+	echo -e "\tLoading policy module ..."
+	semodule -i mod_selinux.pp || quit 1
+	cd $cwd
+fi
+
+### mod_selinux module ###
+if (( $SKIP_MOD_SELINUX == 0 ))
+then
+	# Check if required Apache modules are enabled
+	echo -e "\nBuilding mod_selinux ..."
+	cd mod_selinux
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting make ..."
+		make clean >/dev/null || buildfail=1
+		make >/dev/null || buildfail=1
+	fi
+	if (( buildfail == 0 )) ; then
+		make install >/dev/null || buildfail=1
+	fi
+		
+	cd $cwd
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of mod_selinux module failed." >&2 && quit 1
+	fi
+	
+	# Include mod_selinux configuration
+	echo -e "\tAdding mod_selinux Apache configuration ..."
+	cp $cwd/configs/apache/mods-available/mod_selinux.* /etc/apache2/mods-available/ || quit 1
+
+	a2enmod mod_selinux >/dev/null || quit 1
+	restart_apache=1
 fi
 
 ### php5-selinux module ###
@@ -196,7 +254,7 @@ then
 		echo "*** Build of php5-selinux module failed." >&2 && quit 1
 	fi
 	
-	echo -e "\nLoading php5-selinux module ..."
+	echo -e "\tLoading selix extension ..."
 	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || quit 1
 	if (( PHP_ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
 		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || quit 1
@@ -207,7 +265,19 @@ then
 	if (( SELIX_VERBOSE == 1 )) ; then
 		echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
+	restart_php=1
+fi
+
+# Restart services if needed
+echo -e ""
+if (( restart_apache == 1 )) ; then
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || quit 1
+fi
+if (( restart_php == 1 )) ; then
 	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || quit 1
+fi
+if (( restart_nginx == 1 )) ; then
+	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || quit 1
 fi
 
 quit 0

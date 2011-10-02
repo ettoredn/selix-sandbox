@@ -15,8 +15,10 @@
 
 # Project
 test/
-policy/php-fpm/php-fpm.pp
+policy/php-fpm/*.pp
 policy/php-fpm/tmp/
+policy/mod_selinux/*.pp
+policy/mod_selinux/tmp/
 selix/
 mod_selinux/.deps
 mod_selinux/.libs/
