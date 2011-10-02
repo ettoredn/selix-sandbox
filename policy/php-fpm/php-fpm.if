@@ -8,34 +8,26 @@
 ##	Domain allowed access.
 ##	</summary>
 ## </param>
-#
-interface(`php_base_webapp',`
+# args: php_type - php_script_files_type - htttpd_files_type
+interface(`php_webapp',`
 	gen_require(`
 		attribute php_domains;
 		type php_t, php_config_t, php_log_t;
 	')
-	
+
 	typeattribute $1 php_domains;
-	domain_dyntrans_type( $1 )
+	role system_r types $1;
 	
 	# Enforce no greater permissions on bounded domains
 	typebounds php_t $1;
 	
 	# Allow transition
-	allow php_t $1:process { setcurrent dyntransition };
-	allow php_t sephp_php_t:process { setcurrent dyntransition };
-	allow $1 self:process { setcurrent dyntransition };
-	
-	# target domains must be in system_r role
-	role system_r types $1;
+	allow php_t $1:process { dyntransition };
 	
 	allow $1 php_t:fd use;
-	# no listen or bind
-	allow $1 { php_t self }:stream_socket_class_set { create_socket_perms };
-	allow $1 { php_t self }:dgram_socket_class_set { create_socket_perms };
+	allow $1 { php_t self }:stream_socket_class_set { rw_socket_perms }; # no connect, listen or bind
+	allow $1 { php_t self }:dgram_socket_class_set { rw_socket_perms };  # no connect, listen or bind
 	
-	
-	# !!!!! Read home directories !!!! @TODO
-	userdom_manage_user_home_dirs( $1 )
-	userdom_manage_user_home_content_files( $1 )
+	read_files_pattern( php_t, $3, $2 ) # parent needs equal or more permissions than bounded domain
+	read_files_pattern( $1, $3, $2 )
 ')

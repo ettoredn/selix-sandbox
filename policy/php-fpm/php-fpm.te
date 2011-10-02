@@ -1,6 +1,8 @@
 policy_module( php-fpm, 0.1 )
 
-### Types, attributes
+#############################
+# Declarations
+#############################
 attribute php_domains;
 
 type php_t;
@@ -11,7 +13,6 @@ role system_r types php_t;
 type php_exec_t;
 init_daemon_domain( php_t, php_exec_t )
 
-# Configuration files
 type php_config_t;
 files_type(php_config_t)
 
@@ -24,29 +25,10 @@ files_tmp_file( php_tmp_t )
 type php_pid_t;
 files_pid_file( php_pid_t )
 
-### Local policies
+#############################
+# Local policies
+#############################
 typeattribute php_t php_domains;
-
-# php_config_t config files
-getattr_files_pattern( php_t, php_config_t, php_config_t )
-read_files_pattern( php_t, php_config_t, php_config_t )
-read_lnk_files_pattern( php_t, php_config_t, php_config_t )
-list_dirs_pattern( php_t, php_config_t, php_config_t )
-
-# Log files
-allow php_t php_log_t:file { read_file_perms append_file_perms };
-
-# Temp files
-files_tmp_filetrans( php_t, php_tmp_t, file )
-
-# pid file
-manage_files_pattern(php_t, php_pid_t, php_pid_t)
-files_pid_filetrans(php_t, php_pid_t, { file })
-allow php_t php_pid_t:file unlink;
-
-# Read etc_t files
-files_read_etc_files( php_t )
-miscfiles_read_localization( php_t )
 
 # Process and capabilities
 allow php_t self:process { setcurrent dyntransition signal sigkill };
@@ -66,24 +48,54 @@ corenet_tcp_bind_all_nodes( php_t )
 corenet_tcp_bind_all_unreserved_ports( php_t )
 allow php_t self:stream_socket_class_set { create_stream_socket_perms };
 allow php_t self:dgram_socket_class_set { create_socket_perms };
-# corenet_tcp_connect_all_ports( php_t )
-# allow php_t self:unix_dgram_socket { create_socket_perms sendto };
-# allow php_t self:unix_stream_socket { create_stream_socket_perms connectto };
-# allow php_t self:udp_socket create_socket_perms;
 
+# PHP config files
+getattr_files_pattern( php_t, php_config_t, php_config_t )
+read_files_pattern( php_t, php_config_t, php_config_t )
+read_lnk_files_pattern( php_t, php_config_t, php_config_t )
+list_dirs_pattern( php_t, php_config_t, php_config_t )
 
+# Log files
+allow php_t php_log_t:file { read_file_perms append_file_perms };
+
+# Temp files
+files_tmp_filetrans( php_t, php_tmp_t, file )
+
+# pid file
+manage_files_pattern(php_t, php_pid_t, php_pid_t)
+files_pid_filetrans(php_t, php_pid_t, { file })
+allow php_t php_pid_t:file unlink;
+
+# Read localization
+miscfiles_read_localization( php_t )
+
+# Search log files
+logging_search_logs( php_t )
 
 # Don't audit bin_t search
 corecmd_dontaudit_search_bin( php_t )
 
-# Read home directories
-userdom_manage_user_home_dirs( php_t )
-userdom_manage_user_home_content_files( php_t )
+# Search home directories
+userdom_search_user_home_dirs( php_t )
 
-##### DEV STUFF
+
+#############################
+# Development/testing stuff
+#############################
 # execution of selix.so
 userdom_dontaudit_exec_user_home_content_files( php_t )
+# suppress nsswitch.conf open/read
+files_read_etc_files( php_t )
 
 type sephp_php_t;
 domain_type( sephp_php_t )
-php_base_webapp( sephp_php_t )
+
+type php_sephp_script_t;
+files_type( php_sephp_script_t )
+
+type httpd_sephp_content_t;
+files_type(httpd_sephp_content_t)
+
+php_webapp( sephp_php_t, php_sephp_script_t, httpd_sephp_content_t )
+
+
