@@ -25,8 +25,17 @@ interface(`php_webapp',`
 	allow php_t $1:process { dyntransition };
 	
 	allow $1 php_t:fd use;
-	allow $1 { php_t self }:stream_socket_class_set { rw_socket_perms }; # no connect, listen or bind
-	allow $1 { php_t self }:dgram_socket_class_set { rw_socket_perms };  # no connect, listen or bind
+	# no connect, listen or bind
+	allow $1 { php_t self }:stream_socket_class_set { rw_socket_perms };
+	allow $1 { php_t self }:dgram_socket_class_set { rw_socket_perms };
+	
+	# Log
+	logging_send_syslog_msg( php_t )
+	
+	# Misc files
+	miscfiles_read_fonts( php_t )
+	miscfiles_read_certs( php_t )
+	miscfiles_read_localization( php_t )
 	
 	read_files_pattern( php_t, $3, $2 ) # parent needs equal or more permissions than bounded domain
 	read_files_pattern( $1, $3, $2 )

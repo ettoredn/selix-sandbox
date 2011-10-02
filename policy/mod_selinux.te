@@ -39,6 +39,13 @@ allow httpd_t self : process { setcurrent };
 
 typeattribute httpd_t httpd_server_domains;
 
-ifdef(`enable_mcs',`
-	init_ranged_daemon_domain(httpd_t,httpd_exec_t,s0 - mcs_systemhigh)
-')
+ 
+# ifdef(`enable_mcs',`
+# 	init_ranged_daemon_domain(httpd_t,httpd_exec_t,s0 - mcs_systemhigh)
+# ')
+
+#############################
+### fixes for Apache policy
+#############################
+userdom_search_user_home_content( httpd_t )
+corenet_tcp_connect_all_unreserved_ports( httpd_t ) # FPM
