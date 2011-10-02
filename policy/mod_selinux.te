@@ -13,21 +13,15 @@ policy_module(mod_selinux, 2.2)
 attribute httpd_server_domains;
 
 # domains for unauthorized clients
-type anon_webapp_t;
-domain_type(anon_webapp_t)
-apache_base_webapp(anon_webapp_t)
+# type anon_webapp_t;
+# domain_type( anon_webapp_t )
+# apache_base_webapp( anon_webapp_t )
 
 # domains for authorized clients (user)
-type user_webapp_t;
-domain_type(user_webapp_t)
-apache_base_webapp(user_webapp_t)
-apache_user_webapp(user, user_webapp_t)
-
-# domains for authorized clients (staff)
-type staff_webapp_t;
-domain_type(staff_webapp_t)
-apache_base_webapp(staff_webapp_t)
-apache_user_webapp(staff, staff_webapp_t)
+# type sephp_httpd_t;
+# domain_type( sephp_httpd_t )
+# apache_base_webapp( sephp_httpd_t )
+# apache_user_webapp( sephp, sephp_httpd_t )
 
 ########################################
 #
@@ -40,6 +34,7 @@ gen_require(`
 	type httpd_exec_t;
 ')
 
+domain_dyntrans_type( httpd_t )
 allow httpd_t self : process { setcurrent };
 
 typeattribute httpd_t httpd_server_domains;

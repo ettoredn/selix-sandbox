@@ -147,10 +147,10 @@ fi
 ### policy module ###
 if (( $SKIP_POLICY == 0 ))
 then
-	echo -e "\nBuilding FPM policy module ..."
-	cd policy/php-fpm || quit 1
+	echo -e "\nBuilding mod_selinux and FPM policy modules ..."
+	cd policy || quit 1
 	buildfail=0
-	
+
 	if (( buildfail == 0 )) ; then
 		echo -e "\tExecuting make ..."
 		make clean >/dev/null || buildfail=1
@@ -159,30 +159,15 @@ then
 
 	if (( buildfail != 0 ))
 	then
-		echo "*** Build of FPM policy module failed." >&2 && quit 1
-	fi
-	
-	echo -e "\tLoading policy module ..."
-	semodule -i php-fpm.pp || quit 1
-	cd $cwd
-	
-	echo -e "\nBuilding mod_selinux policy module ..."
-	cd policy/mod_selinux || quit 1
-	buildfail=0
-	
-	if (( buildfail == 0 )) ; then
-		echo -e "\tExecuting make ..."
-		make clean >/dev/null || buildfail=1
-		make >/dev/null || buildfail=1
+		echo "*** Build of policy modules failed." >&2 && quit 1
 	fi
 
-	if (( buildfail != 0 ))
-	then
-		echo "*** Build of mod_selinux policy module failed." >&2 && quit 1
-	fi
-	
-	echo -e "\tLoading policy module ..."
-	semodule -i mod_selinux.pp || quit 1
+	echo -e "\tLoading mod_selinux policy module ..."
+	semodule -r mod_selinux &>/dev/null
+	semodule -i mod_selinux.pp >/dev/null || quit 1
+	echo -e "\tLoading PHP-FPM policy module ..."
+	semodule -r php-fpm &>/dev/null
+	semodule -i php-fpm.pp >/dev/null || quit 1
 	cd $cwd
 fi
 
