@@ -8,6 +8,8 @@
 
 check_extension();
 check_environment();
+write_temp_file();
+unlink_temp_file();
 
 function check_extension()
 {
@@ -36,6 +38,34 @@ function show_environment()
 	echo '<p class="title">$_ENV</p><pre>';
 	var_dump( $_ENV );
 	echo '</pre>';
+}
+
+function write_temp_file()
+{
+	$name = "/tmp/php_test_tmp.php";
+	$mode = "a+";
+	
+	if (!($f = fopen( $name, $mode ))) {
+		echo "<p class='red'>[ ERROR ] Cannot open $name with mode $mode</p>";
+		return;
+	}
+	if (!fwrite( $f, "Dummy data" )) {
+		echo "<p class='red'>[ ERROR ] Cannot write /tmp/php_test_tmp.php</p>";
+		return;
+	}
+	fclose( $f );	
+	echo "<p>[ OK ] Write of $name succeed</p>";
+}
+
+function unlink_temp_file()
+{
+	$name = "/tmp/php_test_tmp.php";
+
+	if (!unlink( $name )) {
+		echo "<p class='red'>[ ERROR ] Cannot unlink $name</p>";
+		return; 
+	}
+	echo "<p>[ OK ] Unlink $name succeed</p>";
 }
 ?></body>
 </html>

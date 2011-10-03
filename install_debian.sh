@@ -172,6 +172,9 @@ then
 	semodule -r virtualhosts &>/dev/null
 	semodule -i virtualhosts.pp >/dev/null || quit 1
 	cd $cwd
+	
+	restart_apache=1
+	restart_php=1
 fi
 
 ### mod_selinux module ###

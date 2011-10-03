@@ -24,6 +24,11 @@ domain_type( sephp_php_t )
 type php_sephp_script_t;
 files_type( php_sephp_script_t )
 
-php_webapp( sephp_php_t, php_sephp_script_t, httpd_sephp_content_t )
+# php tmp files type
+type php_sephp_tmp_t;
+files_type( php_sephp_script_t )
+
+
+php_webapp( sephp_php_t, php_sephp_script_t, httpd_sephp_content_t, php_sephp_tmp_t )
 apache_base_webapp( sephp_httpd_t )
 apache_user_webapp( sephp_httpd_t, httpd_sephp_content_t, httpd_sephp_htaccess_t, php_sephp_script_t )

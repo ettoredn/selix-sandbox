@@ -8,36 +8,47 @@
 ##	Domain allowed access.
 ##	</summary>
 ## </param>
-# args: php_type - php_script_files_type - htttpd_files_type
+# args: php_type - php_script_files_type - htttpd_files_type - tmp_type
 interface(`php_webapp',`
 	gen_require(`
 		attribute php_domains;
 		type php_t, php_config_t, php_log_t;
-		type $1, $2, $3;
+		type $1, $2, $3, $4;
 	')
 
 	typeattribute $1 php_domains;
-	role system_r types $1;
-	
-	# Enforce no greater permissions on bounded domains
 	typebounds php_t $1;
-	
-	# Allow transition
+	role system_r types $1;
+
+	# Process e capabilities
 	allow php_t $1:process { dyntransition };
-	
 	allow $1 php_t:fd use;
+	
+	# Kernel
+	dev_read_urand( $1 )
+	dev_write_urand( $1 )
+	# denied  { dir:search } name="20694" dev=proc sephp_php_t:s0 => php_t:s0
+	allow $1 php_t:dir search;
+	
+	# Network
 	# no connect, listen or bind
 	allow $1 { php_t self }:stream_socket_class_set { rw_socket_perms };
 	allow $1 { php_t self }:dgram_socket_class_set { rw_socket_perms };
 	
-	# Log
-	logging_send_syslog_msg( php_t )
-	
+	# Log files
+	allow $1 php_log_t:file { append_file_perms };
+	logging_send_syslog_msg( $1 )
+	logging_search_logs( $1 )
+
+	# Temp files
+	files_tmp_file( $4 )
+	files_tmp_filetrans( $1, $4, file )
+	allow { php_t $1 } $4:file { manage_file_perms };
+		
 	# Misc files
 	miscfiles_read_fonts( php_t )
 	miscfiles_read_certs( php_t )
 	miscfiles_read_localization( php_t )
 	
-	read_files_pattern( php_t, $3, $2 ) # parent needs equal or more permissions than bounded domain
-	read_files_pattern( $1, $3, $2 )
+	read_files_pattern( { php_t $1 }, $3, $2 )
 ')
