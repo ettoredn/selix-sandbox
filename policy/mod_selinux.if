@@ -15,14 +15,11 @@ interface(`apache_base_webapp',`
 	gen_require(`
 		attribute httpd_server_domains;
 		type httpd_t;
-		type httpd_config_t;
+		# type httpd_config_t;
 		type httpd_log_t;
 		type $1;
 	')
-	########################################
-	#
-	# Local declarations
-	#
+
 	typeattribute $1 httpd_server_domains;
 	typebounds httpd_t $1;
 	role system_r types $1;

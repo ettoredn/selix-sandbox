@@ -32,8 +32,10 @@ interface(`php_webapp',`
 	
 	# Network
 	# no connect, listen or bind
-	allow $1 { php_t self }:stream_socket_class_set { rw_socket_perms };
-	allow $1 { php_t self }:dgram_socket_class_set { rw_socket_perms };
+	allow $1 self:stream_socket_class_set { rw_socket_perms };
+	allow $1 php_t:stream_socket_class_set { rw_socket_perms }; # FPM
+	allow $1 self:dgram_socket_class_set { rw_socket_perms };
+	allow $1 php_t:dgram_socket_class_set { rw_socket_perms }; # FPM
 	
 	# Log files
 	allow $1 php_log_t:file { append_file_perms };

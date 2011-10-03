@@ -41,10 +41,10 @@ dev_read_urand( php_t )
 dev_write_urand( php_t )
 
 # Networking
-corenet_tcp_bind_all_nodes( php_t )
-corenet_tcp_bind_all_unreserved_ports( php_t )
-allow php_t self:stream_socket_class_set { create_stream_socket_perms };
-allow php_t self:dgram_socket_class_set { create_socket_perms };
+corenet_tcp_bind_all_nodes( php_t ) # FPM
+corenet_tcp_bind_all_unreserved_ports( php_t ) # FPM
+allow php_t self:stream_socket_class_set { create_stream_socket_perms }; # FPM
+allow php_t self:dgram_socket_class_set { create_socket_perms }; # FPM
 
 # PHP config files
 getattr_files_pattern( php_t, php_config_t, php_config_t )
