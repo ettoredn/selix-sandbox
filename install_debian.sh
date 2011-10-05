@@ -10,9 +10,10 @@ SKIP_MOD_SELINUX=0
 PHP_ENABLE_JIT_AUTOGLOBALS=0
 SELIX_FORCE_CONTEXT_CHANGE=0
 SELIX_VERBOSE=1
+RELABEL_WEBROOT=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose] [--relabel-webroot]"
 	exit 1
 }
 
@@ -32,7 +33,7 @@ restart_php=0
 restart_nginx=0
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,help" "anspmh" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,relabel-webroot,help" "anspmh" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
@@ -45,6 +46,7 @@ do
 		--enable-jit-autoglobals)	PHP_ENABLE_JIT_AUTOGLOBALS=1;shift;;
 		--force-context-change)		SELIX_FORCE_CONTEXT_CHANGE=1;shift;;
 		--disable-verbose)			SELIX_VERBOSE=0;shift;;
+		--relabel-webroot)			RELABEL_WEBROOT=1;shift;;
 		--help | -h) usage;;
 		--) shift;break;;
 	esac
@@ -147,7 +149,7 @@ fi
 ### policy module ###
 if (( $SKIP_POLICY == 0 ))
 then
-	echo -e "\nBuilding mod_selinux and FPM policy modules ..."
+	echo -e "\nBuilding policy modules for mod_selinux PHP-FPM and virtualhosts ..."
 	cd policy || quit 1
 	buildfail=0
 
@@ -230,8 +232,7 @@ then
 	fi
 	
 	# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
-	# with libselinux (-lselinux) seems not working. Perhaps there's an incompatibility between
-	# phpize related tools and autotools in Debian 6.
+	# with libselinux (-lselinux) seems not working.
 	sed -i '1 i SELIX_SHARED_LIBADD = -lselinux' Makefile
 	
 	if (( buildfail == 0 )) ; then 
@@ -257,6 +258,22 @@ then
 		echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
 	restart_php=1
+fi
+
+### label webroot test links and *.php files ###
+if (( $RELABEL_WEBROOT == 1 ))
+then
+	echo -e "\nRelabeling webroot ..."
+	cd webroot || quit 1
+	sudo chcon -t httpd_sephp_content_t . || quit 1
+	sudo chcon --no-dereference -t httpd_sephp_content_t \
+		link_httpd2httpd.txt link_httpd2php.php link_httpd2php.txt || quit 1
+	sudo chcon --no-dereference -t php_sephp_script_t \
+		link_php2httpd.txt link_php2php.php link_php2php.txt || quit 1
+	sudo chcon -t php_sephp_script_t static_content_php.txt || quit 1
+	find -maxdepth 1 -type f -name "*.php" -print0 | xargs -0 sudo chcon -t php_sephp_script_t
+
+	cd $cwd
 fi
 
 # Restart services if needed
