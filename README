@@ -4,6 +4,8 @@ PHP settings required:
 	auto_globals_jit = Off
 	
 PHP settings suggested:
+	suhosin.executor.disable_eval = On
+	allow_url_include = Off
 	error_reporting = E_ALL | E_STRICT
 	log_errors = On
 	error_log = /var/log/php_errors.log

@@ -1,0 +1,78 @@
+################################################
+# Apache domain httpd_t (diff from refpolicy)
+################################################
+process self : setcurrent
+
+# userdom_search_user_home_content()
+dir home_root_t : list_dir_perms
+dir {user_home_dir_t user_home_t} : search_dir_perms
+
+# corenet_tcp_connect_all_unreserved_ports()
+tcp_socket {port_type -reserved_port_type} : name_connect # FPM
+
+process $vhost_httpd_t : dyntransition
+file $vhost_htaccess_t : read_file_perms
+
+# read_files_pattern()
+dir httpd_$vhost_content_t : search_dir_perms
+file httpd_$vhost_content_t : read_file_perms
+
+# list_dirs_pattern()
+dir httpd_$vhost_content_t : search_dir_perms
+dir httpd_$vhost_content_t : list_dir_perms
+
+# getattr_files_pattern()
+dir httpd_user_content_t : search_dir_perms
+file php_user_script_t : getattr_file_perms
+
+################################################
+# Apache virtualhost domain $vhost_httpd_t
+################################################
+fd httpd_t : use
+stream_socket_class_set httpd_t : rw_socket_perms
+stream_socket_class_set self : create_socket_perms # FPM
+
+# corenet_tcp_connect_all_unreserved_ports()
+tcp_socket {port_type -reserved_port_type} : name_connect # FPM
+
+# dev_read_sysfs()
+dir sysfs_t : search_dir_perms
+file sysfs_t : read_file_perms
+lnk_file sysfs_t : read_lnk_file_perms
+dir sysfs_t : list_dir_perms
+
+# dev_read_rand() => read_chr_files_pattern($1, device_t, random_device_t)
+dir device_t : search_dir_perms
+chr_file random_device_t : read_chr_file_perms
+
+# dev_read_urand() => read_chr_files_pattern($1, device_t, urandom_device_t)
+dir device_t : search_dir_perms
+chr_file urandom_device_t : read_chr_file_perms
+
+# dev_rw_crypto() => rw_chr_files_pattern($1, device_t, crypt_device_t)
+dir device_t : search_dir_perms
+chr_file crypt_device_t : rw_chr_file_perms
+
+# logging_search_logs()
+dir var_t : search_dir_perms
+dir var_log_t : search_dir_perms
+
+# logging_send_syslog_msg()
+allow $1 devlog_t:lnk_file read_lnk_file_perms;
+allow $1 devlog_t:sock_file write_sock_file_perms;
+# the type of socket depends on the syslog daemon
+allow $1 syslogd_t:unix_dgram_socket sendto;
+allow $1 syslogd_t:unix_stream_socket connectto;
+allow $1 self:unix_dgram_socket create_socket_perms;
+allow $1 self:unix_stream_socket create_socket_perms;
+allow $1 console_device_t:chr_file write_chr_file_perms;
+list_dirs_pattern($1, device_t, device_t)
+read_lnk_files_pattern($1, device_t, device_t)
+
+################################################
+# PHP domain php_t
+################################################
+
+################################################
+# PHP virtualhost domain $vhost_php_t
+################################################
