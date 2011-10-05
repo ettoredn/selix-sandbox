@@ -74,9 +74,6 @@ miscfiles_read_localization( php_t )
 # Don't audit bin_t search
 corecmd_dontaudit_search_bin( php_t )
 
-# Search home directories
-userdom_search_user_home_content( php_t )
-
 
 #############################
 # Development/testing stuff

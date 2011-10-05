@@ -8,7 +8,7 @@
 ##	Domain allowed access.
 ##	</summary>
 ## </param>
-# args: php_type - php_script_files_type - htttpd_files_type - tmp_type
+# args: vhost_php_t - php_vhost_script_t - httpd_vhost_content_t - php_vhost_tmp_t
 interface(`php_webapp',`
 	gen_require(`
 		attribute php_domains;
@@ -32,9 +32,9 @@ interface(`php_webapp',`
 	
 	# Network
 	# no connect, listen or bind
-	allow $1 self:stream_socket_class_set { rw_socket_perms };
+	# allow $1 self:stream_socket_class_set { rw_socket_perms };
 	allow $1 php_t:stream_socket_class_set { rw_socket_perms }; # FPM
-	allow $1 self:dgram_socket_class_set { rw_socket_perms };
+	# allow $1 self:dgram_socket_class_set { rw_socket_perms };
 	allow $1 php_t:dgram_socket_class_set { rw_socket_perms }; # FPM
 	
 	# Log files
@@ -52,5 +52,18 @@ interface(`php_webapp',`
 	miscfiles_read_certs( php_t )
 	miscfiles_read_localization( php_t )
 	
+	# Search home directories (ASSUMING VHOSTS IN /home)
+	userdom_search_user_home_content( { php_t $1 } )
+	
+	# Read php_vhost_script_t files and links
 	read_files_pattern( { php_t $1 }, $3, $2 )
+	read_lnk_files_pattern( { php_t $1 }, $3, $2 )
+
+	# Read httpd_vhost_content_t (files and) links
+	# read_files_pattern( { php_t $1 }, $3, $3 )
+	read_lnk_files_pattern( { php_t $1 }, $3, $3 )
+	
+	# List httpd_vhost_content_t dirs
+	# allow { php_t $1 } $3:dir list_dir_perms;
+	
 ')
