@@ -48,8 +48,8 @@ interface(`php_webapp',`
 	allow { php_t $1 } $4:file { manage_file_perms };
 		
 	# Misc files
-	miscfiles_read_fonts( php_t )
-	miscfiles_read_certs( php_t )
+	# miscfiles_read_fonts( php_t )
+	# miscfiles_read_certs( php_t )
 	miscfiles_read_localization( php_t )
 	
 	# Search home directories (ASSUMING VHOSTS IN /home)

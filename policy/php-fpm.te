@@ -25,6 +25,11 @@ files_tmp_file( php_tmp_t ) # files_type()
 type php_pid_t;
 files_pid_file( php_pid_t ) # files_type()
 
+type php_modules_t;
+files_type( php_modules_t )
+type php_modules_dir_t;
+files_type( php_modules_dir_t )
+
 #############################
 # Local policies
 #############################
@@ -66,9 +71,12 @@ allow php_t php_tmp_t:file { manage_file_perms };
 files_pid_filetrans(php_t, php_pid_t, file )
 allow php_t php_pid_t:file { manage_file_perms };
 
+# Dynamic Loadable Libraries
+mmap_files_pattern( php_t , php_modules_dir_t, php_modules_t )
+
 # Misc files
-miscfiles_read_fonts( php_t )
-miscfiles_read_certs( php_t )
+# miscfiles_read_fonts( php_t )
+# miscfiles_read_certs( php_t )
 miscfiles_read_localization( php_t )
 
 # Don't audit bin_t search
