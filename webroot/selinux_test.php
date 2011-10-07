@@ -110,7 +110,7 @@ function write_httpd_content_file()
 	}
 	fwrite( $f, "Hello World!\n" );
 	fclose( $f );
-	echo "<p class='warning'>[ WARN ][ file/httpd_vhost_content_t ] Can open $name with mode '$mode' (ok if you want PHP process write httpd_vhost_content_t files)</p>";
+	echo "<p class='error'>[ ERROR ][ file/httpd_vhost_content_t ] Can open $name with mode '$mode'</p>";
 }
 function append_httpd_content_file()
 {

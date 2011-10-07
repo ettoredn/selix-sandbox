@@ -7,7 +7,7 @@ attribute php_domains;
 
 type php_t;
 domain_type( php_t )
-domain_dyntrans_type( php_t )
+domain_dyntrans_type( php_t ) # adds process fork
 role system_r types php_t;
 
 type php_exec_t;

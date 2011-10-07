@@ -164,19 +164,19 @@ then
 	then
 		echo "*** Build of policy modules failed." >&2 && quit 1
 	fi
+	
+	semodule -r virtualhosts &>/dev/null
+	semodule -r php-fpm &>/dev/null
+	semodule -r mod_selinux &>/dev/null
 
 	echo -e "\tLoading mod_selinux policy module ..."
-	semodule -r mod_selinux &>/dev/null
 	semodule -i mod_selinux.pp >/dev/null || quit 1
 	echo -e "\tLoading PHP-FPM policy module ..."
-	semodule -r php-fpm &>/dev/null
 	semodule -i php-fpm.pp >/dev/null || quit 1
 	echo -e "\tLoading virtualhosts policy module ..."
-	semodule -r virtualhosts &>/dev/null
 	semodule -i virtualhosts.pp >/dev/null || quit 1
 	cd $cwd
 	
-	restart_apache=1
 	restart_php=1
 fi
 
@@ -211,7 +211,7 @@ then
 	restart_apache=1
 fi
 
-### php5-selinux module ###
+### selix PHP extension ###
 if (( $SKIP_SELIX == 0 ))
 then
 	echo -e "\nBuilding selix PHP extension ..."
@@ -258,6 +258,7 @@ then
 	if (( SELIX_VERBOSE == 1 )) ; then
 		echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
+	
 	restart_php=1
 fi
 

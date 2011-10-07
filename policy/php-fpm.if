@@ -19,8 +19,8 @@ interface(`php_webapp',`
 	typeattribute $1 php_domains;
 	typebounds php_t $1;
 	role system_r types $1;
-
-	# Process e capabilities
+	
+	# Process and capabilities
 	allow php_t $1:process { dyntransition };
 	allow $1 php_t:fd use;
 	
@@ -41,7 +41,7 @@ interface(`php_webapp',`
 	allow $1 php_log_t:file { append_file_perms };
 	logging_send_syslog_msg( $1 )
 	logging_search_logs( $1 )
-
+	
 	# Temp files
 	files_tmp_file( $4 )
 	files_tmp_filetrans( $1, $4, file )
@@ -58,12 +58,15 @@ interface(`php_webapp',`
 	# Read php_vhost_script_t files and links
 	read_files_pattern( { php_t $1 }, $3, $2 )
 	read_lnk_files_pattern( { php_t $1 }, $3, $2 )
-
+	
 	# Read httpd_vhost_content_t (files and) links
 	# read_files_pattern( { php_t $1 }, $3, $3 )
 	read_lnk_files_pattern( { php_t $1 }, $3, $3 )
 	
 	# List httpd_vhost_content_t dirs
 	# allow { php_t $1 } $3:dir list_dir_perms;
+	
+	# MySQL
+	mysql_stream_connect( { php_t $1 } )
 	
 ')
