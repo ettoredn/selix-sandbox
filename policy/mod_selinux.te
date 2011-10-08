@@ -27,5 +27,5 @@ allow httpd_t self:process { setcurrent };
 #############################
 ### fixes for Apache policy
 #############################
-userdom_search_user_home_content( httpd_t )
+userdom_search_user_home_content( httpd_t ) # (ASSUMING VHOSTS IN /home)
 corenet_tcp_connect_all_unreserved_ports( httpd_t ) # FPM

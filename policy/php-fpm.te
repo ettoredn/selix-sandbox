@@ -6,11 +6,11 @@ policy_module( php-fpm, 0.1 )
 attribute php_domains;
 
 type php_t;
-domain_type( php_t )
-domain_dyntrans_type( php_t ) # adds process fork
 role system_r types php_t;
+domain_dyntrans_type( php_t ) # adds process fork
 
 type php_exec_t;
+application_domain( php_t, php_exec_t )
 init_daemon_domain( php_t, php_exec_t )
 
 type php_config_t;
@@ -39,6 +39,7 @@ typeattribute php_t php_domains;
 allow php_t self:process { setcurrent dyntransition signal sigkill };
 allow php_t self:capability { kill setuid setgid };
 allow php_t self:fd use;
+allow php_t self:fifo_file rw_fifo_file_perms;
 
 # Kernel
 kernel_read_kernel_sysctls( php_t )
@@ -74,10 +75,11 @@ allow php_t php_pid_t:file { manage_file_perms };
 # Dynamic Loadable Libraries
 mmap_files_pattern( php_t , php_modules_dir_t, php_modules_t )
 
-# Misc files
+# System / Misc files
 # miscfiles_read_fonts( php_t )
 # miscfiles_read_certs( php_t )
 miscfiles_read_localization( php_t )
+files_read_etc_files( php_t ) # PERMISSIVE
 
 # Don't audit bin_t search
 corecmd_dontaudit_search_bin( php_t )
@@ -89,4 +91,4 @@ corecmd_dontaudit_search_bin( php_t )
 # execution of selix.so
 userdom_dontaudit_exec_user_home_content_files( php_t )
 # suppress nsswitch.conf open/read
-files_read_etc_files( php_t )
+

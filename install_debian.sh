@@ -267,13 +267,13 @@ if (( $RELABEL_WEBROOT == 1 ))
 then
 	echo -e "\nRelabeling webroot ..."
 	cd webroot || quit 1
-	sudo chcon -t httpd_sephp_content_t . || quit 1
-	sudo chcon --no-dereference -t httpd_sephp_content_t \
+	chcon -t httpd_sephp_content_t . || quit 1
+	chcon --no-dereference -t httpd_sephp_content_t \
 		link_httpd2httpd.txt link_httpd2php.php link_httpd2php.txt || quit 1
-	sudo chcon --no-dereference -t php_sephp_script_t \
+	chcon --no-dereference -t php_sephp_script_t \
 		link_php2httpd.txt link_php2php.php link_php2php.txt || quit 1
-	sudo chcon -t php_sephp_script_t static_content_php.txt || quit 1
-	find -maxdepth 1 -type f -name "*.php" -print0 | xargs -0 sudo chcon -t php_sephp_script_t
+	chcon -t php_sephp_script_t static_content_php.txt || quit 1
+	find -maxdepth 1 -type f -name "*.php" -print0 | xargs -0 chcon -t php_sephp_script_t
 
 	cd $cwd
 fi
@@ -281,13 +281,13 @@ fi
 # Restart services if needed
 echo -e ""
 if (( restart_apache == 1 )) ; then
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/apache2 restart || quit 1
+	/etc/init.d/apache2 restart || quit 1
 fi
 if (( restart_php == 1 )) ; then
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || quit 1
+	/etc/init.d/php5-fpm restart || quit 1
 fi
 if (( restart_nginx == 1 )) ; then
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || quit 1
+	/etc/init.d/nginx restart || quit 1
 fi
 
 quit 0
