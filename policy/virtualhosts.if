@@ -1,1 +1,47 @@
 ## <summary></summary>
+########################################
+## <summary>
+##	Create a set of derived types for virtualhost
+##	web content.
+## </summary>
+## <param name="prefix">
+##	<summary>
+##	The prefix to be used for deriving type names.
+##	</summary>
+## </param>
+#
+# template(`virtualhost_template',`
+# 	gen_require(`
+# 		interface php_webapp;
+# 		interface apache_base_webapp;
+# 		interface apache_user_webapp;
+# 	')
+# 
+# 	# httpd domain
+# 	type $1_httpd_t;
+# 	domain_type( $1_httpd_t )
+# 
+# 	# public files type
+# 	type httpd_$1_content_t;
+# 	files_type( httpd_$1_content_t )
+# 
+# 	# .htaccess type
+# 	type httpd_$1_htaccess_t;
+# 	files_type( httpd_$1_htaccess_t )
+# 
+# 	# php type
+# 	type $1_php_t;
+# 	domain_type( $1_php_t )
+# 
+# 	# php scripts type
+# 	type php_$1_script_t;
+# 	files_type( php_$1_script_t )
+# 
+# 	# php tmp files type
+# 	type php_$1_tmp_t;
+# 	files_type( php_$1_script_t )
+# 
+# 	php_webapp( $1_php_t, php_$1_script_t, httpd_$1_content_t, php_$1_tmp_t )
+# 	apache_base_webapp( $1_httpd_t )
+# 	apache_user_webapp( $1_httpd_t, httpd_$1_content_t, httpd_$1_htaccess_t, php_$1_script_t )
+# ')

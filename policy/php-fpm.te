@@ -90,5 +90,5 @@ corecmd_dontaudit_search_bin( php_t )
 #############################
 # execution of selix.so
 userdom_dontaudit_exec_user_home_content_files( php_t )
-# suppress nsswitch.conf open/read
+
 

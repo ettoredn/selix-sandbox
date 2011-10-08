@@ -24,3 +24,5 @@ mod_selinux/mod_selinux.l*
 mod_selinux/mod_selinux.o
 mod_selinux/mod_selinux.slo
 webroot/wordpress/
+webroot/magento/
+

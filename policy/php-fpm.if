@@ -51,7 +51,8 @@ interface(`php_webapp',`
 	# System / misc files
 	# miscfiles_read_fonts( php_t )
 	# miscfiles_read_certs( php_t )
-	miscfiles_read_localization( php_t )
+	miscfiles_read_localization( $1 )
+	files_read_etc_files( $1 ) # PERMISSIVE
 	
 	# Search home directories (ASSUMING VHOSTS IN /home)
 	userdom_search_user_home_content( { php_t $1 } )
