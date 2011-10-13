@@ -29,6 +29,7 @@ interface(`php_webapp',`
 	# Kernel
 	dev_read_urand( $1 )
 	dev_write_urand( $1 )
+	kernel_read_system_state( $1 )
 	# denied  { dir:search } name="20694" dev=proc sephp_php_t:s0 => php_t:s0
 	allow $1 php_t:dir search;
 	
@@ -36,8 +37,10 @@ interface(`php_webapp',`
 	allow $1 php_t:stream_socket_class_set { rw_socket_perms }; # FPM
 	allow php_t $1:stream_socket_class_set { rw_socket_perms }; # FPM
 	allow $1 php_t:dgram_socket_class_set { rw_socket_perms }; # FPM
-	sysnet_dns_name_resolve( php_t ) # PERMISSIVE
-	
+	# DNS
+	sysnet_dns_name_resolve( { php_t $1 } ) # PERMISSIVE
+	corenet_tcp_connect_http_port( { php_t $1 } ) # PERMISSIVE
+
 	# Log files
 	allow $1 php_log_t:file { append_file_perms };
 	logging_send_syslog_msg( $1 )
@@ -71,9 +74,13 @@ interface(`php_webapp',`
 	
 	# List httpd_vhost_content_t dirs
 	allow { php_t $1 } $3:dir list_dir_perms; # PERMISSIVE
-
 	
+	# Create httpd_vhost_content_t
+	create_dirs_pattern( { php_t $1 }, $3, $3 ) # PERMISSIVE
+
 	# MySQL
 	mysql_stream_connect( { php_t $1 } )
 	
+	# Set high sensitivity for created file
+	# range_transition $1 $3:file s15; # MLS
 ')

@@ -24,6 +24,8 @@ read_httpd_content_2_php_script_link();
 read_php_script_2_php_script_link();
 read_php_script_2_httpd_content_link();
 
+// create_httpd_content_file();
+
 function check_extension()
 {
 	if (extension_loaded("selix"))
@@ -190,6 +192,18 @@ function read_php_script_2_httpd_content_link()
 		return;
 	}
 	echo "<p class='error'>[ ERROR ][ link/php_vhost_script_t ] Can open $name with mode '$mode'</p>";
+	fclose( $f );
+}
+function create_httpd_content_file()
+{
+	$name = "created_file.txt";
+	$mode = "w+";
+	
+	if (!($f = @fopen( $name, $mode ))) {
+		echo "<p class='error'>[ ERROR ][ file/httpd_vhost_content_t ] Cannot create $name</p>";
+		return;
+	}
+	echo "<p>[ OK ][ file/httpd_vhost_content_t ] Can create $name</p>";
 	fclose( $f );
 }
 ?></body>

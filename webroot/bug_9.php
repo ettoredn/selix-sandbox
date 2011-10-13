@@ -3,7 +3,7 @@ $url = 'http://api.wordpress.org/core/version-check/1.6/?version=3.2.1&php=5.3.8
 
 $args = array(
 	"method" => "GET",
-	"timeout" => 3, // Default was 3
+	"timeout" => 2, // Default was 3
 	"redirection" => 5,
 	"httpversion" => "1.0",
 	"user-agent" => "WordPress/3.2.1; http://sephp.dev/wordpress/",
