@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Configuration variables
-#REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk"
-REQUIRED_PACKAGES="apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk"
+#REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk re2c"
+REQUIRED_PACKAGES="apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk re2c"
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
-SKIP_NGINX=0
+SKIP_NGINX=1
 SKIP_SELIX=0
 SKIP_POLICY=0
 SKIP_MOD_SELINUX=0
