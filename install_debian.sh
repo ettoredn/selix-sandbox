@@ -267,7 +267,10 @@ if (( $RELABEL_WEBROOT == 1 ))
 then
 	echo -e "\nRelabeling webroot ..."
 	cd webroot || quit 1
-	find -maxdepth 1 -print0 | xargs -0 chcon -t httpd_sephp_content_t
+	
+	find -print0 | xargs -0 chcon -t httpd_sephp_content_t
+	find -type f -name "*.php" -print0 | xargs -0 chcon -t php_sephp_script_t
+	find -type f -name ".htaccess" -print0 | xargs -0 chcon -t httpd_sephp_htaccess_t
 	chcon -t httpd_sephp_content_t . || quit 1
 	chcon --no-dereference -t httpd_sephp_content_t \
 		link_httpd2httpd.txt link_httpd2php.php link_httpd2php.txt || quit 1
@@ -275,7 +278,6 @@ then
 		link_php2httpd.txt link_php2php.php link_php2php.txt || quit 1
 	chcon -t php_sephp_script_t static_content_php.txt || quit 1
 	chcon -t httpd_sephp_content_t static_content.txt || quit 1
-	find -maxdepth 1 -type f -name "*.php" -print0 | xargs -0 chcon -t php_sephp_script_t
 
 	cd $cwd
 fi
