@@ -9,7 +9,7 @@ SELIX_INI="/etc/php5/conf.d/selix.ini"
 TRACES_DIR="traces"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
 # How many times each benchmark is executed and data collected
-BENCHMARK_TIMES=10
+BENCHMARK_TIMES=50
 
 function usage {
 	echo "Usage: $0"
@@ -136,6 +136,8 @@ lttng destroy "$lttng_session" >/dev/null || quit 1
 
 ### Load trace data into the database ###
 echo -e "\nLoading trace data into database ..."
+sqlfile="$lttng_session.sql"
+cat /dev/null > "$sqlfile"
 while read line
 do
 	timestamp=$( echo $line | cut -d, -f1 | cut -d" " -f3 ) #sec_epoch.ns
@@ -148,7 +150,7 @@ do
 	
 	sql="INSERT INTO $DB_TABLE_SELIX (session, timestamp, delta, loglevel, name, args) \
 		VALUES( $lttng_session, $timestamp, $delta, $level, '$name', '$args' );"
-	echo $sql | mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" || quit 1
+	echo $sql >> "$sqlfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/selix" )"
 
 while read line
@@ -163,8 +165,11 @@ do
 	
 	sql="INSERT INTO $DB_TABLE_PHP (session, timestamp, delta, loglevel, name, args) \
 		VALUES( $lttng_session, $timestamp, $delta, $level, '$name', '$args' );"
-	echo $sql | mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" || quit 1
+	echo $sql >> "$sqlfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
+
+mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqlfile" || quit 1
+rm "$sqlfile"
 
 quit 0
 # A PHP script into webroot generates fancy graphs
