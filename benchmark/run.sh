@@ -9,10 +9,10 @@ SELIX_INI="/etc/php5/conf.d/selix.ini"
 TRACES_DIR="traces"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
 # How many times each benchmark is executed and data collected
-BENCHMARK_TIMES=50
+BENCHMARK_COUNT="10"
 
 function usage {
-	echo "Usage: $0"
+	echo "Usage: $0 [--count=N]"
 	exit 1
 }
 
@@ -40,12 +40,17 @@ ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 lttng_session=$( date +%s )
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "help" "h" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "count:,help" "h" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
 	case "$1" in
-#		--skip-apache | -a)			SKIP_APACHE=1;shift;;
+		--count)	BENCHMARK_COUNT=$( echo $2 | sed "s/'//g" )
+					if (( BENCHMARK_COUNT < 1 ))
+					then
+						echo "*** count argument must be > 0" >&2 && quit 1
+					fi
+					shift;shift;;
 		--help | -h) usage;;
 		--) shift;break;;
 	esac
@@ -84,7 +89,7 @@ then
 fi
 
 ### Run benchmarks with selix extension enabled ###
-echo -e "\nRunning benchmarks $BENCHMARK_TIMES times with selix enabled ..."
+echo -e "\nRunning benchmarks $BENCHMARK_COUNT times with selix enabled ..."
 tracepath="$TRACES_DIR/selix"
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 
@@ -96,7 +101,7 @@ lttng start "$lttng_session" >/dev/null || quit 1
 for testfile in *.php
 do
 	echo -en "\t$testfile "
-	for (( i=0; i<$BENCHMARK_TIMES; i++ ))
+	for (( i=0; i<$BENCHMARK_COUNT; i++ ))
 	do
 		env LD_PRELOAD="liblttng-ust-fork.so" php "$testfile" >/dev/null || quit 1
 		echo -en "."
@@ -109,7 +114,7 @@ lttng stop "$lttng_session" >/dev/null || quit 1
 lttng destroy "$lttng_session" >/dev/null || quit 1
 
 ### Run benchmarks with selix extension disabled ###
-echo -e "\nRunning benchmarks $BENCHMARK_TIMES times with selix disabled ..."
+echo -e "\nRunning benchmarks $BENCHMARK_COUNT times with selix disabled ..."
 disable_selix
 tracepath="$TRACES_DIR/php"
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
@@ -122,7 +127,7 @@ lttng start "$lttng_session" >/dev/null || quit 1
 for testfile in *.php
 do
 	echo -en "\t$testfile "
-	for (( i=0; i<$BENCHMARK_TIMES; i++ ))
+	for (( i=0; i<$BENCHMARK_COUNT; i++ ))
 	do
 		env LD_PRELOAD="liblttng-ust-fork.so" php "$testfile" >/dev/null || quit 1
 		echo -en "."
@@ -171,6 +176,7 @@ done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqlfile" || quit 1
 rm "$sqlfile"
 
+enable_selix
 quit 0
 # A PHP script into webroot generates fancy graphs
 # http://people.iola.dk/olau/flot/examples/stacking.html
