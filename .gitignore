@@ -24,5 +24,8 @@ mod_selinux/mod_selinux.l*
 mod_selinux/mod_selinux.o
 mod_selinux/mod_selinux.slo
 webroot/wordpress/
+webroot/wordpress-3.2.1.tar.gz
 webroot/magento/
-
+webroot/magento-1.6.0.0.tar.bz2
+webroot/magento-sample-data-1.2.0.tar.bz2
+benchmark/traces/
