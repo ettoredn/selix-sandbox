@@ -21,3 +21,9 @@ CREATE TABLE `selix` (
   KEY `name` (`name`) USING BTREE,
   KEY `session` (`session`) USING BTREE
 );
+
+CREATE TABLE `session` (
+  `session` int(11) NOT NULL,
+  `benchmarks` text NOT NULL,
+  PRIMARY KEY (`session`)
+);

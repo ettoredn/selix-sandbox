@@ -5,6 +5,7 @@ DB_PASS="ettore"
 DB_DATABASE="tracedata"
 DB_TABLE_SELIX="selix"
 DB_TABLE_PHP="php"
+DB_TABLE_SESSION="session"
 SELIX_INI="/etc/php5/conf.d/selix.ini"
 TRACES_DIR="traces"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
@@ -38,6 +39,7 @@ abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
 cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 lttng_session=$( date +%s )
+run_tests=""
 
 # Evaluate options
 newopts=$( getopt -n"$0" --longoptions "count:,help" "h" "$@" ) || usage
@@ -106,6 +108,8 @@ do
 		env LD_PRELOAD="liblttng-ust-fork.so" php "$testfile" >/dev/null || quit 1
 		echo -en "."
 	done
+	
+	run_tests="$run_tests $testfile"
 	echo
 done
 
@@ -142,7 +146,7 @@ lttng destroy "$lttng_session" >/dev/null || quit 1
 ### Load trace data into the database ###
 echo -e "\nLoading trace data into database ..."
 sqlfile="$lttng_session.sql"
-cat /dev/null > "$sqlfile"
+echo "START TRANSACTION;" > "$sqlfile"
 while read line
 do
 	timestamp=$( echo $line | cut -d, -f1 | cut -d" " -f3 ) #sec_epoch.ns
@@ -173,6 +177,12 @@ do
 	echo $sql >> "$sqlfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 
+# Session info
+run_tests=$( echo ${run_tests:1} | sed 's/\.php//g' )
+echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks) \
+	VALUES( $lttng_session, '$run_tests' );" >> "$sqlfile"
+
+echo "COMMIT;" >> "$sqlfile"
 mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqlfile" || quit 1
 rm "$sqlfile"
 
