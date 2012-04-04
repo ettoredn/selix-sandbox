@@ -2,10 +2,9 @@
 # Configuration variables
 DB_USER="selix"
 DB_PASS="ettore"
-DB_DATABASE="tracedata"
-DB_TABLE_SELIX="selix"
-DB_TABLE_PHP="php"
+DB_DATABASE="php_benchmark"
 DB_TABLE_SESSION="session"
+DB_TABLE_TRACEDATA="tracedata"
 SELIX_INI="/etc/php5/conf.d/selix.ini"
 TRACES_DIR="traces"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
@@ -149,31 +148,43 @@ sqlfile="$lttng_session.sql"
 echo "START TRANSACTION;" > "$sqlfile"
 while read line
 do
-	timestamp=$( echo $line | cut -d, -f1 | cut -d" " -f3 ) #sec_epoch.ns
-	delta=$( echo $line | cut -d, -f2 | cut -d" " -f4 | cut -d+ -f2 ) #sec.ns
-	level=$( echo $line | cut -d, -f3 | cut -d" " -f5 | sed 's/^(\([0-9]\+\))$/\1/' )
-	name=$( echo $line | cut -d, -f4 | cut -d" " -f4 )
-	args=$( echo $line | cut -d, -f6 | cut -d{ -f2 | sed 's/^ \(.*\) }$/\1/' )
-	
+	seded=$( echo $line | \
+		sed 's/^timestamp = \([[:digit:].]\{20,\}\), delta = +\([[:digit:].?]\{11,\}\), loglevel = [A-Z_]\+ (\([[:digit:]]\+\)), name = \([[:graph:]]\+\), .\+, { \([[:print:]]\+\) }$/\1|\2|\3|\4|\5/' \
+		)
+	# BUG: if last token (i.e args) contains '|' it gets replaced with ' '
+	IFS='|'; tokens=( $seded ); IFS=' '
+	timestamp="${tokens[0]}"
+	delta="${tokens[1]}"
+	level="${tokens[2]}"
+	name="${tokens[3]}"
+	args="${tokens[@]:4}"
+
 	if [[ $delta == "?.?????????" ]] ; then delta="NULL" ; fi
 	
-	sql="INSERT INTO $DB_TABLE_SELIX (session, timestamp, delta, loglevel, name, args) \
-		VALUES( $lttng_session, $timestamp, $delta, $level, '$name', '$args' );"
+	sql="INSERT INTO $DB_TABLE_TRACEDATA \
+		(session, configuration, timestamp, delta, loglevel, name, args) \
+		VALUES( $lttng_session, 'selix', $timestamp, $delta, $level, '$name', '$args' );"
 	echo $sql >> "$sqlfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/selix" )"
 
 while read line
 do
-	timestamp=$( echo $line | cut -d, -f1 | cut -d" " -f3 ) #sec_epoch.ns
-	delta=$( echo $line | cut -d, -f2 | cut -d" " -f4 | cut -d+ -f2 ) #sec.ns
-	level=$( echo $line | cut -d, -f3 | cut -d" " -f5 | sed 's/^(\([0-9]\+\))$/\1/' )
-	name=$( echo $line | cut -d, -f4 | cut -d" " -f4 )
-	args=$( echo $line | cut -d, -f6 | cut -d{ -f2 | sed 's/^ \(.*\) }$/\1/' )
-	
+	seded=$( echo $line | \
+		sed 's/^timestamp = \([[:digit:].]\{20,\}\), delta = +\([[:digit:].?]\{11,\}\), loglevel = [A-Z_]\+ (\([[:digit:]]\+\)), name = \([[:graph:]]\+\), .\+, { \([[:print:]]\+\) }$/\1|\2|\3|\4|\5/' \
+		)
+	# BUG: if last token (i.e args) contains '|' it gets replaced with ' '
+	IFS='|'; tokens=( $seded ); IFS=' '
+	timestamp="${tokens[0]}"
+	delta="${tokens[1]}"
+	level="${tokens[2]}"
+	name="${tokens[3]}"
+	args="${tokens[@]:4}"
+		
 	if [[ $delta == "?.?????????" ]] ; then delta="NULL" ; fi
 	
-	sql="INSERT INTO $DB_TABLE_PHP (session, timestamp, delta, loglevel, name, args) \
-		VALUES( $lttng_session, $timestamp, $delta, $level, '$name', '$args' );"
+	sql="INSERT INTO $DB_TABLE_TRACEDATA \
+		(session, configuration, timestamp, delta, loglevel, name, args) \
+		VALUES( $lttng_session, 'php', $timestamp, $delta, $level, '$name', '$args' );"
 	echo $sql >> "$sqlfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 
@@ -188,6 +199,3 @@ rm "$sqlfile"
 
 enable_selix
 quit 0
-# A PHP script into webroot generates fancy graphs
-# http://people.iola.dk/olau/flot/examples/stacking.html
-# http://pchart.sourceforge.net/screenshots.php?ID=8
