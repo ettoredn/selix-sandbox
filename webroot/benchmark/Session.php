@@ -85,7 +85,7 @@ class Session
                    ORDER BY `timestamp` DESC
                    LIMIT 1)";
             $r = Database::GetConnection()->query($q);
-            if (!$r || $r->rowCount() != 2) throw new ErrorException("Query or data error!");
+            if (!$r || $r->rowCount() != 2) throw new ErrorException("Query or data error: $q");
 
             $trace = $r->fetch(); $startTimestamp = $trace['timestamp'];
             $trace = $r->fetch(); $finishTimestamp = $trace['timestamp'];

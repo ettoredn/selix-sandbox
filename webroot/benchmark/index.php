@@ -22,11 +22,11 @@ $q = "SELECT session AS id
       GROUP BY session
       HAVING COUNT(DISTINCT configuration) > 1
       ORDER BY session DESC";
-$r = Database::GetConnection()->query($q) or die("Query error!");
+$r = Database::GetConnection()->query($q) or die("Query error: $q");
 
 echo '
 <form method="get">
-    <select name="bench">';
+    <select name="bench" size="10" onchange="this.form.submit()">';
 
 while($s = $r->fetch())
     echo '<option value="'. $s['id'] .
@@ -35,7 +35,7 @@ while($s = $r->fetch())
 
 echo '
     </select>
-    <input type="submit" value="Show benchmark" />
+    <!-- <input type="submit" value="Show benchmark" /> -->
 </form>';
 
 echo '<pre>';

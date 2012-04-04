@@ -16,7 +16,7 @@ class phpinfoBenchmark extends Benchmark
               WHERE `timestamp` BETWEEN ". $this->GetStartTimestamp() ." AND ". $this->GetFinishTimestamp() ."
               ORDER BY timestamp ASC";
         $r = Database::GetConnection()->query($q);
-        if (!$r || $r->rowCount() % 4) throw new ErrorException("Query or data error!");
+        if (!$r || $r->rowCount() % 6) throw new ErrorException("Query or data error: $q");
 
         // Load tests
         while ($trace = $r->fetch())

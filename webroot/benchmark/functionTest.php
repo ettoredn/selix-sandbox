@@ -12,7 +12,7 @@ class functionTest extends Test
               WHERE `timestamp` > ". $this->GetStartTimestamp() ." AND `timestamp` < ". $this->GetFinishTimestamp() ."
               ORDER BY timestamp ASC";
         $r = Database::GetConnection()->query($q);
-        if (!$r || $r->rowCount() != 4) throw new ErrorException("Query or data error!");
+        if (!$r || $r->rowCount() != 4) throw new ErrorException("Query or data error: $q");
 
         while ($trace = $r->fetch())
         {
