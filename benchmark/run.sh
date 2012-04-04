@@ -191,8 +191,8 @@ done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 
 # Session info
 run_tests=$( echo ${run_tests:1} | sed 's/\.php//g' )
-echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks) \
-	VALUES( $lttng_session, '$run_tests' );" >> "$sqltmpfile"
+echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks, runs) \
+	VALUES( $lttng_session, '$run_tests', $BENCHMARK_COUNT );" >> "$sqltmpfile"
 
 echo "COMMIT;" >> "$sqltmpfile"
 mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqltmpfile" || quit 1

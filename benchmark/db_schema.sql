@@ -14,5 +14,6 @@ CREATE TABLE `tracedata` (
 CREATE TABLE `session` (
   `session` int(11) NOT NULL,
   `benchmarks` text NOT NULL,
+  `runs` int(11) NOT NULL,
   PRIMARY KEY (`session`)
 );

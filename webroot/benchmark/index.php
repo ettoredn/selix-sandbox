@@ -22,26 +22,40 @@ $q = "SELECT session AS id
       GROUP BY session
       HAVING COUNT(DISTINCT configuration) > 1
       ORDER BY session DESC";
-$r = Database::GetConnection()->query($q) or die("Query error: $q");
+$rtrace = Database::GetConnection()->query($q) or die("Query error: $q");
 
-echo '
-<form method="get">
-    <select name="bench" size="10" onchange="this.form.submit()">';
+if ($rtrace->rowCount() < 1)
+    echo '<div>No session present in the database</div>';
+else
+{
+    echo '
+    <form method="get">
+        <select name="bench" size="6" onchange="this.form.submit()">';
 
-while($s = $r->fetch())
-    echo '<option value="'. $s['id'] .
-            ( !empty($_GET['bench']) && $_GET['bench'] == $s['id'] ? '" selected="selected">' : '">' ).
-            date("Ymd H:i:s", $s['id']) .'</option>';
+    while($s = $rtrace->fetch())
+    {
+        $q = "SELECT *
+              FROM ". Database::SESSION_TABLE ."
+              WHERE session=". $s['id'];
+        $r = Database::GetConnection()->query($q) or die("Query error: $q");
+        $info = $r->fetch();
 
-echo '
-    </select>
-    <!-- <input type="submit" value="Show benchmark" /> -->
-</form>';
+        echo '<option value="'. $s['id'] .
+                ( !empty($_GET['bench']) && $_GET['bench'] == $s['id'] ? '" selected="selected">' : '">' ).
+                date("Ymd H:i:s", $s['id']) .' ('. $info['runs'] .' runs)</option>';
+    }
 
-echo '<pre>';
+    echo '
+        </select>
+        <!-- <input type="submit" value="Show benchmark" /> -->
+    </form>';
+}
+
 // Show benchmark if requested
 if (!empty($_GET['bench']))
 {
+    echo '<pre>';
+
     // Retrieve start and finish timestamps for each benchmark run
     $id = $_GET['bench'];
 
@@ -50,8 +64,10 @@ if (!empty($_GET['bench']))
     $results = $s->GetResults();
 
     print_r( $results );
+
+    echo '</pre>';
 }
-echo '</pre>';
+
 
 // Close the connection
 $db = null;
