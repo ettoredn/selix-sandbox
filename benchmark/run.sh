@@ -6,7 +6,8 @@ DB_DATABASE="php_benchmark"
 DB_TABLE_SESSION="session"
 DB_TABLE_TRACEDATA="tracedata"
 SELIX_INI="/etc/php5/conf.d/selix.ini"
-TRACES_DIR="traces"
+TRACES_DIR="/dev/shm/traces"
+SQL_TMP_PATH="/dev/shm"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
 # How many times each benchmark is executed and data collected
 BENCHMARK_COUNT="10"
@@ -144,8 +145,8 @@ lttng destroy "$lttng_session" >/dev/null || quit 1
 
 ### Load trace data into the database ###
 echo -e "\nLoading trace data into database ..."
-sqlfile="$lttng_session.sql"
-echo "START TRANSACTION;" > "$sqlfile"
+sqltmpfile="$SQL_TMP_PATH/$lttng_session.sql"
+echo "START TRANSACTION;" > "$sqltmpfile"
 while read line
 do
 	seded=$( echo $line | \
@@ -164,7 +165,7 @@ do
 	sql="INSERT INTO $DB_TABLE_TRACEDATA \
 		(session, configuration, timestamp, delta, loglevel, name, args) \
 		VALUES( $lttng_session, 'selix', $timestamp, $delta, $level, '$name', '$args' );"
-	echo $sql >> "$sqlfile"
+	echo $sql >> "$sqltmpfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/selix" )"
 
 while read line
@@ -185,17 +186,17 @@ do
 	sql="INSERT INTO $DB_TABLE_TRACEDATA \
 		(session, configuration, timestamp, delta, loglevel, name, args) \
 		VALUES( $lttng_session, 'php', $timestamp, $delta, $level, '$name', '$args' );"
-	echo $sql >> "$sqlfile"
+	echo $sql >> "$sqltmpfile"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 
 # Session info
 run_tests=$( echo ${run_tests:1} | sed 's/\.php//g' )
 echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks) \
-	VALUES( $lttng_session, '$run_tests' );" >> "$sqlfile"
+	VALUES( $lttng_session, '$run_tests' );" >> "$sqltmpfile"
 
-echo "COMMIT;" >> "$sqlfile"
-mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqlfile" || quit 1
-rm "$sqlfile"
+echo "COMMIT;" >> "$sqltmpfile"
+mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqltmpfile" || quit 1
+rm "$sqltmpfile"
 
 enable_selix
 quit 0
