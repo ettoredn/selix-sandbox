@@ -177,6 +177,7 @@ then
 	semodule -i virtualhosts.pp >/dev/null || quit 1
 	echo -e "\tRestoring contexts ..."
 	restorecon -r /usr/sbin/php-fpm || quit 1
+	restorecon -r /usr/bin/php || quit 1
 	restorecon -r /usr/lib/php || quit 1
 	cd $cwd
 	
