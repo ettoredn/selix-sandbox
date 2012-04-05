@@ -45,7 +45,7 @@ abstract class Benchmark
     /*
      * Calculates average of values returned by a method called on every Test loaded.
      */
-    protected function CalculateAverageTestsTimestampValue( $method )
+    protected function CalculateAverageTestsTimeValue( $method )
     {
         $total = 0.0;
 
@@ -68,7 +68,7 @@ abstract class Benchmark
             echo "[".get_class($this)."/CalculateAverageTestsTimestampValue] { result = $result = $total/".
                     count($this->tests)." }\n";
 
-        return $result;
+        return round($result);
     }
 
     /*
@@ -76,7 +76,7 @@ abstract class Benchmark
      * called on $this and the specified Benchmark.
      * Supplied Benchmark is taken as baseline.
      */
-    protected function CalculateBenchmarkTimestampPercentageChange( $b, $method )
+    protected function CalculateBenchmarkTimePercentageChange( $b, $method )
     {
         if (!($b instanceof Benchmark ))
             throw new ErrorException('$b not instanceof Benchmark )');
@@ -102,7 +102,7 @@ abstract class Benchmark
      */
     public function GetAverageExecutionTime()
     {
-        return $this->CalculateAverageTestsTimestampValue("GetExecutionTime");
+        return $this->CalculateAverageTestsTimeValue("GetExecutionTime");
     }
 
     public abstract function LoadFromTable( $table );

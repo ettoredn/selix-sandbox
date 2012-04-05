@@ -71,8 +71,8 @@ class phpinfoBenchmark extends Benchmark
         if (!($b instanceof phpinfoBenchmark))
             throw new ErrorException('!($b instanceof phpinfoBenchmark)');
 
-        $r['zend_compile_time'] = $this->CalculateBenchmarkTimestampPercentageChange($b, "GetAverageZendCompileTime");
-        $r['zend_execute_time'] = $this->CalculateBenchmarkTimestampPercentageChange($b, "GetAverageZendExecuteTime");
+        $r['zend_compile_time'] = $this->CalculateBenchmarkTimePercentageChange($b, "GetAverageZendCompileTime");
+        $r['zend_execute_time'] = $this->CalculateBenchmarkTimePercentageChange($b, "GetAverageZendExecuteTime");
 
         return $r;
     }
@@ -82,7 +82,7 @@ class phpinfoBenchmark extends Benchmark
      */
     public function GetAverageZendCompileTime()
     {
-        return $this->CalculateAverageTestsTimestampValue("GetZendCompileTime");
+        return $this->CalculateAverageTestsTimeValue("GetZendCompileTime");
     }
 
     /*
@@ -90,7 +90,7 @@ class phpinfoBenchmark extends Benchmark
      */
     public function GetAverageZendExecuteTime()
     {
-        return $this->CalculateAverageTestsTimestampValue("GetZendExecuteTime");
+        return $this->CalculateAverageTestsTimeValue("GetZendExecuteTime");
     }
 }
 
