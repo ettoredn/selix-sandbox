@@ -2,8 +2,8 @@
 /* A PHP script into webroot generates fancy graphs
    http://people.iola.dk/olau/flot/examples/stacking.html
    http://pchart.sourceforge.net/screenshots.php?ID=8 */
-$verbose = false;
-$verbose_maths = false;
+$verbose = true;
+$verbose_maths = true;
 require_once("Database.php");
 require_once("Session.php");
 
@@ -12,6 +12,14 @@ require_once("Session.php");
  <html>
  <head>
  <title>Benchmark Viewer</title>
+     <script type="text/javascript">
+         function switchVerbose()
+         {
+             var e = document.getElementById('verbose');
+             if (e.style.display == "none") e.style.display = "block";
+             else e.style.display = "none";
+         }
+     </script>
  </head>
  <body>
 <?php
@@ -25,7 +33,7 @@ $q = "SELECT session AS id
 $rtrace = Database::GetConnection()->query($q) or die("Query error: $q");
 
 if ($rtrace->rowCount() < 1)
-    echo '<div>No session present in the database</div>';
+    echo '<p>No session present in the database</p>';
 else
 {
     echo '
@@ -54,23 +62,29 @@ else
 // Show benchmark if requested
 if (!empty($_GET['bench']))
 {
-    echo '<pre>';
-
     // Retrieve start and finish timestamps for each benchmark run
     $id = $_GET['bench'];
 
-    $s = new Session( $id );
+    // Catch verbose output
+    ob_start();
+
+    try {
+        $s = new Session( $id );
+    } catch (ErrorException $e)
+    { die("<p>Session $id doesn't exist</p>"); }
     $s->LoadBenchmarks();
     $results = $s->GetResults();
 
+    // Get verbose output produced
+    $verbose = ob_get_clean();
+
+    echo '<pre>';
     print_r( $results );
-
     echo '</pre>';
+
+    echo '<p><a href="#" onclick="switchVerbose(); return false;">Show/hide verbose</a></p>';
+    echo "<pre id='verbose' style='display: none;'>$verbose</pre>";
 }
-
-
-// Close the connection
-$db = null;
 ?>
  </body>
  </html>

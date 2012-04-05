@@ -1,5 +1,6 @@
 <?php
 require_once("Database.php");
+require_once("Tracepoint.php");
 require_once("Benchmark.php");
 require_once("phpinfoTest.php");
 
@@ -19,25 +20,26 @@ class phpinfoBenchmark extends Benchmark
         if (!$r || $r->rowCount() % 6) throw new ErrorException("Query or data error: $q");
 
         // Load tests
-        while ($trace = $r->fetch())
+        while ($row = $r->fetch(PDO::FETCH_ASSOC))
         {
+            $trace = new Tracepoint($row);
             // Get start timestamp
-            if ($trace['name'] == "PHP_Zend:execute_primary_script_start")
+            if ($trace->GetName() == "PHP_Zend:execute_primary_script_start")
             {
-                $timestampStart = $trace['timestamp'];
+                $timestampStart = $trace->GetTimestamp();
 
                 if ($GLOBALS['verbose'])
-                    echo "[".$trace['session']."/".$trace['configuration']."] { timestamp = ".$trace['timestamp'].
+                    echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
                             ", benchmark = ".$this->GetName().", test_start = ".$timestampStart." }\n";
             }
 
             // Get finish timestamp
-            if ($trace['name'] == "PHP_Zend:execute_primary_script_finish")
+            if ($trace->GetName() == "PHP_Zend:execute_primary_script_finish")
             {
-                $timestampFinish = $trace['timestamp'];
+                $timestampFinish = $trace->GetTimestamp();
 
                 if ($GLOBALS['verbose'])
-                    echo "[".$trace['session']."/".$trace['configuration']."] { timestamp = ".$trace['timestamp'].
+                    echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
                             ", benchmark = ".$this->GetName().", test_finish = ".$timestampFinish." }\n";
 
                 // Build class name

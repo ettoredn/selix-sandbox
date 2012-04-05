@@ -72,7 +72,7 @@ class Session
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
                        AND `name`='PHP_Zend:execute_primary_script_start'
-                       AND args='file = \"$benchName.php\"'
+                       AND args LIKE 'file = \"$benchName.php\"%'
                    ORDER BY `timestamp` ASC
                    LIMIT 1
                   ) UNION (
@@ -81,17 +81,19 @@ class Session
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
                        AND `name`='PHP_Zend:execute_primary_script_finish'
-                       AND args='file = \"$benchName.php\"'
+                       AND args LIKE 'file = \"$benchName.php\"%'
                    ORDER BY `timestamp` DESC
                    LIMIT 1)";
             $r = Database::GetConnection()->query($q);
             if (!$r || $r->rowCount() != 2) throw new ErrorException("Query or data error: $q");
 
-            $trace = $r->fetch(); $startTimestamp = $trace['timestamp'];
-            $trace = $r->fetch(); $finishTimestamp = $trace['timestamp'];
+            $trace = new Tracepoint( $r->fetch(PDO::FETCH_ASSOC) );
+            $startTimestamp = $trace->GetTimestamp();
+            $trace = new Tracepoint( $r->fetch(PDO::FETCH_ASSOC) );
+            $finishTimestamp = $trace->GetTimestamp();
 
             if ($GLOBALS['verbose'])
-                echo "[".$trace['session']."/".$trace['configuration']."] { bench_name = $benchName".
+                echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { bench_name = $benchName".
                         ", bench_start = $startTimestamp, bench_finish = $finishTimestamp }\n";
 
             // Build benchmark's class name

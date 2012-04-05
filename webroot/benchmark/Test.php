@@ -3,9 +3,10 @@
 abstract class Test
 {
     private $name;
-    private $startTimestamp;
-    private $finishTimestamp;
-    private $execTime;
+    private $timestampStart;
+    private $timestampFinish;
+    private $timeStart;
+    private $timeFinish;
     // Test implementation's data
     private $data;
 
@@ -15,29 +16,30 @@ abstract class Test
             throw new ErrorException('empty($start) || empty($finish)');
 
         $this->name = substr(get_class($this), 0, -4);
-        $this->startTimestamp = $start;
-        $this->finishTimestamp = $finish;
+        $this->timestampStart = $start;
+        $this->timestampFinish = $finish;
     }
 
     public function GetName()
     { return $this->name; }
 
-    public function GetStartTimestamp()
-    { return $this->startTimestamp; }
+    public function GetTimestampStart()
+    { return $this->timestampStart; }
 
-    public function GetFinishTimestamp()
-    { return $this->finishTimestamp; }
+    public function GetTimestampFinish()
+    { return $this->timestampFinish; }
+
+    protected function SetTimeStart( $time )
+    { $this->timeStart = $time; }
+
+    protected function SetTimeFinish( $time )
+    { $this->timeFinish = $time; }
 
     /*
      * Returns test script execution time (i.e. zend_execute_scripts).
      */
     public function GetExecutionTime()
-    {
-        if (empty($this->execTime))
-            $this->execTime = bcsub($this->finishTimestamp, $this->startTimestamp, 9);
-
-        return $this->execTime;
-    }
+    { return $this->timeFinish - $this->timeStart; }
 
     protected function AddData( $key, $value )
     { $this->data[$key] = $value; }
