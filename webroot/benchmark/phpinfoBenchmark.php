@@ -23,39 +23,39 @@ class phpinfoBenchmark extends Benchmark
         while ($row = $r->fetch(PDO::FETCH_ASSOC))
         {
             $trace = new Tracepoint($row);
-            // Get start timestamp
-            if ($trace->GetName() == "PHP_Zend:execute_primary_script_start")
-            {
-                $timestampStart = $trace->GetTimestamp();
 
-                if ($GLOBALS['verbose'])
-                    echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                            ", benchmark = ".$this->GetName().", test_start = ".$timestampStart." }\n";
-            }
+            switch ($trace->GetName()) {
+                case "PHP_PHP:execute_primary_script_start":
+                    // Get start timestamp
+                    $timestampStart = $trace->GetTimestamp();
 
-            // Get finish timestamp
-            if ($trace->GetName() == "PHP_Zend:execute_primary_script_finish")
-            {
-                $timestampFinish = $trace->GetTimestamp();
+                    if ($GLOBALS['verbose'])
+                        echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                ", benchmark = ".$this->GetName().", test_start = ".$timestampStart." }\n";
+                    break;
+                case "PHP_PHP:execute_primary_script_finish":
+                    // Get finish timestamp
+                    $timestampFinish = $trace->GetTimestamp();
 
-                if ($GLOBALS['verbose'])
-                    echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                            ", benchmark = ".$this->GetName().", test_finish = ".$timestampFinish." }\n";
+                    if ($GLOBALS['verbose'])
+                        echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                ", benchmark = ".$this->GetName().", test_finish = ".$timestampFinish." }\n";
 
-                // Build class name
-                $testClass = $this->GetName() ."Test";
-                if (!class_exists($testClass))
-                    throw new ErrorException("Class $testClass is required!");
+                    // Build class name
+                    $testClass = $this->GetName() ."Test";
+                    if (!class_exists($testClass))
+                        throw new ErrorException("Class $testClass is required!");
 
-                // Instantiate phpinfoTest
-                $t = new phpinfoTest($timestampStart, $timestampFinish);
-                $this->AddTest( $t );
-                $t->LoadFromTable( $table );
+                    // Instantiate phpinfoTest
+                    $t = new phpinfoTest($timestampStart, $timestampFinish);
+                    $this->AddTest( $t );
+                    $t->LoadFromTable( $table );
 
-                if ($GLOBALS['verbose'])
-                    echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime().
-                            ", zend_compile_time = ".$t->GetZendCompileTime().
-                            ", zend_execute_time = ".$t->GetZendExecuteTime()." }\n";
+                    if ($GLOBALS['verbose'])
+                        echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime().
+                                ", zend_compile_time = ".$t->GetZendCompileTime().
+                                ", zend_execute_time = ".$t->GetZendExecuteTime()." }\n";
+                    break;
             }
         }
     }

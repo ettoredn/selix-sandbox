@@ -71,7 +71,7 @@ class Session
                    FROM $table
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
-                       AND `name`='PHP_Zend:execute_primary_script_start'
+                       AND `name`='PHP_PHP:execute_primary_script_start'
                        AND args LIKE 'file = \"$benchName.php\"%'
                    ORDER BY `timestamp` ASC
                    LIMIT 1
@@ -80,7 +80,7 @@ class Session
                    FROM $table
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
-                       AND `name`='PHP_Zend:execute_primary_script_finish'
+                       AND `name`='PHP_PHP:execute_primary_script_finish'
                        AND args LIKE 'file = \"$benchName.php\"%'
                    ORDER BY `timestamp` DESC
                    LIMIT 1)";

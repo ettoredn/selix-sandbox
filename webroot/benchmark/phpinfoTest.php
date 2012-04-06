@@ -20,7 +20,7 @@ class phpinfoTest extends Test
             $trace = new Tracepoint($row);
 
             switch ($trace->GetName()) {
-                case 'PHP_Zend:execute_primary_script_start':
+                case 'PHP_PHP:execute_primary_script_start':
                     $this->SetTimeStart($trace->GetCPUTime());
                     break;
                 case 'PHP_Zend:compile_start':
@@ -59,7 +59,7 @@ class phpinfoTest extends Test
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
                                 ", test = ".$this->GetName().", zend_execute_time = ".$this->GetData("zend_executeTime")." }\n";
                     break;
-                case 'PHP_Zend:execute_primary_script_finish':
+                case 'PHP_PHP:execute_primary_script_finish':
                     $this->SetTimeFinish($trace->GetCPUTime());
                     break;
             }
