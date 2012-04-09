@@ -14,7 +14,7 @@ class Database
     {
         if (!isset(self::$db))
         {
-            $user = "selix";
+            $user = "root";
             $pass = "ettore";
             $dbName = "php_benchmark";
 

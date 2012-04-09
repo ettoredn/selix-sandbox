@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Configuration variables
-DB_USER="selix"
+DB_USER="root"
 DB_PASS="ettore"
 DB_DATABASE="php_benchmark"
 DB_TABLE_SESSION="session"

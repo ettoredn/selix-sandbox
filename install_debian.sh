@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # Configuration variables
-#REQUIRED_PACKAGES="php5-fpm php5-dev apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk re2c"
-REQUIRED_PACKAGES="apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi nginx selinux-basics libselinux1-dev selinux-policy-dev gawk re2c"
+REQUIRED_PACKAGES="apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcgi selinux-basics libselinux1-dev selinux-policy-dev gawk re2c pkg-config texinfo libtool libxml2-dev libbz2-dev libgd2-noxpm libjpeg8-dev libcurl4-gnutls-dev libvpx-dev libpng12-dev libxpm-dev libonig-dev libmcrypt-dev"
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
-SKIP_NGINX=1
 SKIP_SELIX=0
 SKIP_POLICY=0
 SKIP_MOD_SELINUX=0
@@ -14,7 +12,7 @@ SELIX_VERBOSE=1
 RELABEL_WEBROOT=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-nginx|-n] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose] [--relabel-webroot]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose] [--relabel-webroot]"
 	exit 1
 }
 
@@ -31,16 +29,14 @@ cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 restart_apache=0
 restart_php=0
-restart_nginx=0
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-nginx,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,relabel-webroot,help" "anspmh" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,relabel-webroot,help" "anspmh" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
 	case "$1" in
 		--skip-apache | -a)			SKIP_APACHE=1;shift;;
-		--skip-nginx | -n)			SKIP_NGINX=1;shift;;
 		--skip-selix | -s)			SKIP_SELIX=1;shift;;
 		--skip-policy | -p)			SKIP_POLICY=1;shift;;
 		--skip-modselinux | -m)		SKIP_MOD_SELINUX=1;shift;;
@@ -128,23 +124,6 @@ then
 		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/apache2/sites-available/sephp-vhost.conf
 	a2ensite sephp-vhost.conf >/dev/null || quit 1
 	restart_apache=1
-fi
-
-### Nginx configuration ###
-if (( $SKIP_NGINX == 0 ))
-then
-	echo -e "\nUpdating Nginx configuration ..."
-	
-	# Disable default nginx virtualhost
-	echo -e "\tDisabling default Nginx virtualhost ..."
-	rm "/etc/nginx/sites-enabled/default" 2>/dev/null
-	
-	# Copy virtualhost into nginx sites and enable it
-	echo -e "\tEnabling SePHP Nginx virtualhost ..."
-	cat "$cwd/configs/nginx/sites-available/sephp-vhost.conf" | 
-		sed 's/\${vhost_root}/'"$ecwd\/webroot"'/g' >/etc/nginx/sites-available/sephp-vhost.conf
-	ln -s /etc/nginx/sites-available/sephp-vhost.conf /etc/nginx/sites-enabled/sephp-vhost.conf 2>/dev/null
-	restart_nginx=1
 fi
 
 ### policy module ###
@@ -236,10 +215,6 @@ then
 		./configure >/dev/null || buildfail=1
 	fi
 	
-	# Adding PHP_ADD_LIBRARY(selinux) in config.m4 in order to have libtool link 
-	# with libselinux (-lselinux) seems not working.
-	sed -i '1 i SELIX_SHARED_LIBADD = -lselinux' Makefile
-	
 	if (( buildfail == 0 )) ; then 
 		echo -e "\tExecuting make ..."
 		make >/dev/null || buildfail=1
@@ -293,9 +268,6 @@ if (( restart_apache == 1 )) ; then
 fi
 if (( restart_php == 1 )) ; then
 	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/php5-fpm restart || quit 1
-fi
-if (( restart_nginx == 1 )) ; then
-	runcon $( cat /etc/selinux/default/contexts/initrc_context ) /etc/init.d/nginx restart || quit 1
 fi
 
 quit 0

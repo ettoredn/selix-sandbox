@@ -3,7 +3,7 @@
    http://people.iola.dk/olau/flot/examples/stacking.html
    http://pchart.sourceforge.net/screenshots.php?ID=8 */
 $verbose = true;
-$verbose_maths = false;
+$verbose_maths = true;
 require_once("Database.php");
 require_once("Session.php");
 

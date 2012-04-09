@@ -88,6 +88,7 @@ abstract class Benchmark
 
         // Overhhead = (new_result - old_result) / old_result
         $diff = bcsub($thisBench, $baseBench, 9);
+//        if ($diff < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compile time < 1\n";
         $percent = bcdiv($diff, $baseBench, 10);
         $res = bcmul($percent , 100, 1);
         if ($GLOBALS['verbose_maths'])

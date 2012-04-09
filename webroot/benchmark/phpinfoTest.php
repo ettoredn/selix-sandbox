@@ -32,8 +32,7 @@ class phpinfoTest extends Test
                     if (empty($compileStartTime))
                         throw new ErrorException('empty($compileStartTime)');
                     $time = $compileFinishTime - $compileStartTime;
-                    if ($time < 10)
-                        throw new ErrorException('zend_compile time < 10 for '. $trace->GetConfiguration() .'/'. $trace->GetTimestamp());
+                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compile time < 1\n";
 
                     $this->AddData("zend_compileTime", $time);
 
@@ -50,8 +49,7 @@ class phpinfoTest extends Test
                     if (empty($executeStartTime))
                         throw new ErrorException('empty($executeStartTime)');
                     $time = $executeFinishTime - $executeStartTime;
-                    if ($time < 10)
-                        throw new ErrorException('zend_execute time < 10 for '. $trace->GetConfiguration() .'/'. $trace->GetTimestamp());
+                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_execute time < 1\n";
 
                     $this->AddData("zend_executeTime", $time);
 
