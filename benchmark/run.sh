@@ -31,12 +31,12 @@ function quit {
 
 function enable_selix {
 	# echo "Enabling selix extension ..."
-	sudo sed -i 's/^;\?.*extension\s*=\s*\(.*\)selix\.so$/extension=\1selix.so/' "$SELIX_INI"
+	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)selix\.so$/zend_extension=\1selix.so/' "$SELIX_INI"
 }
 
 function disable_selix {
 	# echo "Disabling selix extension ..."
-	sudo sed -i 's/^;\?.*extension\s*=\s*\(.*\)selix\.so$/;extension=\1selix.so/' "$SELIX_INI"
+	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)selix\.so$/;zend_extension=\1selix.so/' "$SELIX_INI"
 }
 
 function run_benchmarks {
@@ -136,13 +136,13 @@ fi
 which php &>/dev/null || ( echo "*** Can't locate php-cli" >&2 && quit 1 )
 
 # selix extension must be disabled
-if [[ $( php -m | egrep '^selix$' ) == "selix" ]]
+if (( $( php -m | egrep '^selix$' | wc -l ) > 0 ))
 then
 	# selix not loaded
 	[ -f "$SELIX_INI" ] || ( echo "*** $SELIX_INI must be present" >&2 && quit 1 )
 	
 	# the extension load directive must be present
-	egrep 'extension.*selix.so$' "$SELIX_INI" &>/dev/null || ( echo "*** Extension load directive must be present in $SELIX_INI" >&2 && quit 1 )
+	egrep 'zend_extension.*selix.so$' "$SELIX_INI" &>/dev/null || ( echo "*** Extension load directive must be present in $SELIX_INI" >&2 && quit 1 )
 	
 	# Enable selix
 	echo "selix extension detected as enabled. Disabling ..."

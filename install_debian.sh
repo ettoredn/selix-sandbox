@@ -227,7 +227,7 @@ then
 	fi
 	
 	echo -e "\tLoading selix extension ..."
-	echo "extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || quit 1
+	echo "zend_extension=$cwd/selix/modules/selix.so" > "/etc/php5/conf.d/selix.ini" || quit 1
 	if (( PHP_ENABLE_JIT_AUTOGLOBALS == 0 )) ; then
 		echo "auto_globals_jit = Off" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
