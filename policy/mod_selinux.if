@@ -53,6 +53,9 @@ interface(`apache_base_webapp',`
 	
 	# Search sys content
 	apache_search_sys_content($1)
+	
+	# Read blank.gif
+	files_read_usr_files($1)
 ')
 
 ########################################
