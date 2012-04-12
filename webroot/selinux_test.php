@@ -7,6 +7,8 @@
 </style></head>
 <body><?php
 
+include( "included_script.php" );
+
 check_extension();
 check_environment();
 write_temp_file();
