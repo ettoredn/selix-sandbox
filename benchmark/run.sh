@@ -156,7 +156,8 @@ rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 
 # Create LTTng session
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
-lttng enable-event -a -u >/dev/null || quit 1
+lttng enable-event "PHP_PHP:*" -u --tracepoint >/dev/null || quit 1
+lttng enable-event "PHP_Zend:*" -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run benchmarks
 run_benchmarks
@@ -172,7 +173,8 @@ rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 
 # Create LTTng session
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
-lttng enable-event -a -u >/dev/null || quit 1
+lttng enable-event "PHP_PHP:*" -u --tracepoint >/dev/null || quit 1
+lttng enable-event "PHP_Zend:*" -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run benchmarks
 run_benchmarks
