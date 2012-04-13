@@ -15,9 +15,11 @@ class functionBenchmark extends Benchmark
         $q = "SELECT *
               FROM $table
               WHERE `timestamp` BETWEEN ". $this->GetStartTimestamp() ." AND ". $this->GetFinishTimestamp() ."
+                AND `name` IN('PHP_PHP:execute_primary_script_start',
+                              'PHP_PHP:execute_primary_script_finish')
               ORDER BY timestamp ASC";
         $r = Database::GetConnection()->query($q);
-        if (!$r || $r->rowCount() % 6) throw new ErrorException("Query or data error: $q");
+        if (!$r || $r->rowCount() % 2) throw new ErrorException("Query or data error: $q");
 
         // Load tests
         while ($row = $r->fetch(PDO::FETCH_ASSOC))

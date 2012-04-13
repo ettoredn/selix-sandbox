@@ -9,6 +9,8 @@
 
 include( "included_script.php" );
 
+eval( "if (0) echo 'eval';" );
+
 check_extension();
 check_environment();
 write_temp_file();
