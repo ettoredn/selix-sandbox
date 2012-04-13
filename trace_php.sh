@@ -8,7 +8,7 @@ ENV_ARGS="LD_PRELOAD=liblttng-ust-fork.so\
  SELINUX_COMPILE_RANGE=s0"
 
 function usage {
-	echo "Usage: $0 [filename]"
+	echo "Usage: $0 [--selix] [filename]"
 	exit 1
 }
 
@@ -23,9 +23,23 @@ old_cwd=$( pwd )
 abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
 cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
-scriptname="$1"
 lttng_session=$( date +%s )
 tracepath="$TRACES_DIR/cli"
+event_filter="PHP_*"
+
+# Evaluate options
+newopts=$( getopt -n"$0" --longoptions "selix,help" "sh" "$@" ) || usage
+set -- $newopts
+while (( $# >= 0 ))
+do
+	case "$1" in
+		--selix)	event_filter="PHP_selix:*";shift;;
+		--help | -h) usage;;
+		--) shift;break;;
+	esac
+done
+
+scriptname="$( echo $1 | sed "s/'//g" )"
 
 # Change to script directory
 cd "$cwd"
@@ -48,11 +62,11 @@ which php &>/dev/null || ( echo "*** Can't locate php-cli" >&2 && quit 1 )
 # Create LTTng session
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
-lttng enable-event -a -u >/dev/null || quit 1
+lttng enable-event "$event_filter" -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run PHP
 cmd="env $ENV_ARGS php $scriptname"
-$cmd >/dev/null || quit 1
+$cmd >/dev/null
 # Destroy LTTng session
 lttng stop "$lttng_session" >/dev/null || quit 1
 lttng destroy "$lttng_session" >/dev/null || quit 1
@@ -60,4 +74,4 @@ lttng destroy "$lttng_session" >/dev/null || quit 1
 # Display trace
 babeltrace $BABELTRACE_ARGS "$TRACES_DIR/cli"
 
-quit 0
+#lttng enable-event "PHP_selix:*" -u
