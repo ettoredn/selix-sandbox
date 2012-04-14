@@ -57,8 +57,8 @@ interface(`php_webapp',`
 	allow { php_t $1 } $5:file { manage_file_perms };
 		
 	# System / misc files
-	# miscfiles_read_fonts( php_t )
-	# miscfiles_read_certs( php_t )
+	miscfiles_read_fonts( php_t )
+	miscfiles_read_certs( php_t )
 	miscfiles_read_localization( { $1 $2 } )
 	files_read_etc_files( { $1 $2 } ) # PERMISSIVE
 	

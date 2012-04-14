@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 TRACES_DIR="/dev/shm/traces"
-BABELTRACE_ARGS="--clock-seconds"
-ENV_ARGS="LD_PRELOAD=liblttng-ust-fork.so\
- SELINUX_DOMAIN=sephp_php_t\
- SELINUX_RANGE=s0\
- SELINUX_COMPILE_DOMAIN=sephp_compile_php_t\
- SELINUX_COMPILE_RANGE=s0"
+ENV_ARGS="LD_PRELOAD=liblttng-ust-fork.so"
 
 function usage {
-	echo "Usage: $0 [--selix] [filename]"
+	echo "Usage: $0 [--selix]"
 	exit 1
 }
 
@@ -23,8 +18,8 @@ old_cwd=$( pwd )
 abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
 cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
-lttng_session=$( date +%s )
-tracepath="$TRACES_DIR/cli"
+lttng_session="php-fpm"
+tracepath="$TRACES_DIR/fpm"
 event_filter="PHP_*"
 
 # Evaluate options
@@ -39,7 +34,11 @@ do
 	esac
 done
 
-scriptname="$( echo $1 | sed "s/'//g" )"
+# Script must be run as root
+if [[ $( whoami ) != "root" ]]
+then
+	echo "*** This script must be run as root" >&2 && quit 1
+fi
 
 # Change to script directory
 cd "$cwd"
@@ -56,8 +55,11 @@ then
 	echo "*** LTTng-2.0 is needed to trace PHP" >&2 && quit 1
 fi
 
-# Check php-cli
-which php &>/dev/null || ( echo "*** Can't locate php-cli" >&2 && quit 1 )
+# Check php-fpm
+which php-fpm &>/dev/null || ( echo "*** Can't locate php-fpm" >&2 && quit 1 )
+
+# Kill all existing instances
+killall --signal 9 php-fpm 2>/dev/null
 
 # Create LTTng session
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
@@ -65,13 +67,7 @@ lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
 lttng enable-event "$event_filter" -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run PHP
-cmd="env $ENV_ARGS php $scriptname"
+cmd="env $ENV_ARGS php-fpm --fpm-config /etc/php5/fpm/php-fpm.conf"
 $cmd >/dev/null
-# Destroy LTTng session
-lttng stop "$lttng_session" >/dev/null || quit 1
-lttng destroy "$lttng_session" >/dev/null || quit 1
-
-# Display trace
-babeltrace $BABELTRACE_ARGS "$tracepath"
 
 quit 0
