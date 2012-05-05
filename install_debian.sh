@@ -235,7 +235,7 @@ then
 		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
 	if (( SELIX_VERBOSE == 1 )) ; then
-		echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
+		#echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
 	
 	restart_php=1

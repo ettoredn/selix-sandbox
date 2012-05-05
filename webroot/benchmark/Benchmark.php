@@ -1,4 +1,5 @@
 <?php
+require_once("AverageNumeric.php");
 require_once("Test.php");
 
 abstract class Benchmark
@@ -43,67 +44,70 @@ abstract class Benchmark
     { $this->tests[] = $t; }
 
     /*
-     * Calculates average of values returned by a method called on every Test loaded.
-     */
-    protected function CalculateAverageTestsTimeValue( $method )
-    {
-        $total = 0.0;
-
-        if ($GLOBALS['verbose_maths']) echo "[".get_class($this)."/CalculateAverageTestsTimestampValue] { method = $method }\n";
-        foreach($this->tests as $t)
-        {
-            if (!($t instanceof Test ))
-                throw new ErrorException('$t not instanceof Test )');
-            if (!is_callable(array($t, $method)))
-                throw new ErrorException('!is_callable(array($t, $method))');
-
-            $value = call_user_func(array($t, $method));
-            if ($GLOBALS['verbose_maths'])
-                echo "[".get_class($this)."/CalculateAverageTestsTimestampValue] { $total += $value }\n";
-            $total = bcadd($total, $value, 9);
-        }
-
-        $result = bcdiv($total, count($this->tests), 9);
-        if ($GLOBALS['verbose_maths'])
-            echo "[".get_class($this)."/CalculateAverageTestsTimestampValue] { result = $result = $total/".
-                    count($this->tests)." }\n";
-
-        return round($result);
-    }
-
-    /*
      * Calculates percentage change between timestamp values returned by a method
      * called on $this and the specified Benchmark.
      * Supplied Benchmark is taken as baseline.
      */
-    protected function CalculateBenchmarkTimePercentageChange( $b, $method )
+    protected function CalculateBenchmarkNumericDelta( $b, $method )
     {
         if (!($b instanceof Benchmark ))
             throw new ErrorException('$b not instanceof Benchmark )');
         if (!is_callable(array($b, $method)) || !is_callable(array($this, $method)))
             throw new ErrorException('!is_callable(array($b, $method)) || !is_callable(array($this, $method))');
 
-        $baseBench = call_user_func(array($b, $method));
-        $thisBench = call_user_func(array($this, $method));
+        if ($GLOBALS['verbose_maths']) echo "[".get_class($this)."/CalculateBenchmarkNumericDelta] { method = $method }\n";
+        $baseAvg = call_user_func(array($b, $method));
+        $thisAvg = call_user_func(array($this, $method));
+
+        if (!($baseAvg instanceof AverageNumeric) || !($thisAvg instanceof AverageNumeric))
+            throw new ErrorException('!($baseAverage instanceof AverageNumeric) || !($thisAverage instanceof AverageNumeric)');
 
         // Overhhead = (new_result - old_result) / old_result
-        $diff = bcsub($thisBench, $baseBench, 9);
-//        if ($diff < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compile time < 1\n";
-        $percent = bcdiv($diff, $baseBench, 10);
-        $res = bcmul($percent , 100, 1);
+        $delta = bcsub($thisAvg->GetMean(), $baseAvg->GetMean(), AverageNumeric::PRECISION);
+        $percent = bcdiv($delta, $baseAvg->GetMean(), AverageNumeric::PRECISION);
+        $res = bcmul($percent , 100, AverageNumeric::PRECISION);
         if ($GLOBALS['verbose_maths'])
-            echo "[".get_class($this)."/CalculateBenchmarkTimestampPercentageChange] { baseBench = $baseBench".
-                    ", thisBench = $thisBench, diff = $diff, percent = $percent, res = $res }\n";
+            echo "[".get_class($this)."/CalculateBenchmarkNumericDelta] { baseBench = ".$baseAvg->GetMean().
+                    ", thisBench = ".$thisAvg->GetMean().", diff = $delta, percent = $percent, res = $res }\n";
 
-        return $res;
+        return array(
+            'standard_error' => array(
+                'base_relative' => round($baseAvg->GetRelativeStandardError(), 1),
+                'this_relative' => round($thisAvg->GetRelativeStandardError(), 1)
+            ),
+            'delta' => round($delta),
+            'percentage' => round($res, 1)
+        );
     }
 
     /*
-     * Returns average test execution time.
+     * Instantiates a new Average object filled by values returned by a method called on every Test loaded.
+     */
+    protected function GetAverageNumeric( $method )
+    {
+        if ($GLOBALS['verbose_maths']) echo "[".get_class($this)."/CalculateTestsAverageNumeric] { method = $method }\n";
+
+        $items = array();
+        foreach($this->tests as $t)
+        {
+            if (!($t instanceof Test ))
+                throw new ErrorException('$t not instanceof Test )');
+            if (!is_callable(array($t, $method)))
+                throw new ErrorException('!is_callable(array($t, $method))');
+            $items[] = call_user_func(array($t, $method));
+        }
+
+        $avg = new AverageNumeric($items);
+
+        return $avg;
+    }
+
+    /*
+     * Returns AverageNumeric test execution time.
      */
     public function GetAverageExecutionTime()
     {
-        return $this->CalculateAverageTestsTimeValue("GetExecutionTime");
+        return $this->GetAverageNumeric("GetExecutionTime");
     }
 
     public abstract function LoadFromTable( $table );

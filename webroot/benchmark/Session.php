@@ -72,7 +72,7 @@ class Session
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
                        AND `name`='PHP_PHP:execute_primary_script_start'
-                       AND args LIKE 'file = \"$benchName.php\"%'
+                       AND args LIKE 'path = \"$benchName.php\"%'
                    ORDER BY `timestamp` ASC
                    LIMIT 1
                   ) UNION (
@@ -81,7 +81,7 @@ class Session
                    WHERE session=". $this->id ."
                        AND `configuration`='$configuration'
                        AND `name`='PHP_PHP:execute_primary_script_finish'
-                       AND args LIKE 'file = \"$benchName.php\"%'
+                       AND args LIKE 'path = \"$benchName.php\"%'
                    ORDER BY `timestamp` DESC
                    LIMIT 1)";
             $r = Database::GetConnection()->query($q);
@@ -108,7 +108,10 @@ class Session
 
             if ($GLOBALS['verbose'])
                 echo "Benchmark loaded { name = ".$b->GetName().", test_count = ".$b->GetTestCount().
-                        ", avg_execution_time = ".$b->GetAverageExecutionTime()." }\n";
+                        ", avg_execution_mean = ".$b->GetAverageExecutionTime()->GetMean().
+                        ", avg_execution_stddev = ".$b->GetAverageExecutionTime()->GetStandardDeviation()." }\n";
+
+//            $b->GetAverageExecutionTime()->WriteValuesToFile("bench_".$b->GetName()."_".$b->GetConfigurationName().".txt");
         }
     }
 

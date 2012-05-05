@@ -38,13 +38,13 @@ class phpinfoTest extends Test
                     if (empty($compileStartTime))
                         throw new ErrorException('empty($compileStartTime)');
                     $time = $compileFinishTime - $compileStartTime;
-                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compile time < 1\n";
+                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compileTime < 1\n";
 
                     $this->AddData("zend_compileTime", $time);
 
                     if ($GLOBALS['verbose'])
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zend_compile_time = ".$this->GetData("zend_compileTime")." }\n";
+                                ", test = ".$this->GetName().", zend_compileTime = ".$this->GetData("zend_compileTime")." }\n";
                     break;
                 case 'PHP_Zend:scripts_execute_start':
                     $executeStartTime = $trace->GetCPUTime();
@@ -55,13 +55,13 @@ class phpinfoTest extends Test
                     if (empty($executeStartTime))
                         throw new ErrorException('empty($executeStartTime)');
                     $time = $executeFinishTime - $executeStartTime;
-                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_execute time < 1\n";
+                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_executeTime < 1\n";
 
                     $this->AddData("zend_executeTime", $time);
 
                     if ($GLOBALS['verbose'])
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zend_execute_time = ".$this->GetData("zend_executeTime")." }\n";
+                                ", test = ".$this->GetName().", zend_executeTime = ".$this->GetData("zend_executeTime")." }\n";
                     break;
                 case 'PHP_PHP:execute_primary_script_finish':
                     $this->SetTimeFinish($trace->GetCPUTime());

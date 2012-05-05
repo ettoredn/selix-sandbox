@@ -68,13 +68,15 @@ class functionBenchmark extends Benchmark
     public function CompareTo( Benchmark $b )
     {
         if ($GLOBALS['verbose_maths'])
-            echo "[".get_class($this)."/CompareTo] { benchmark = ".get_class($b)." }\n";
+            echo "[".get_class($this)."/CompareTo] { benchmark = ".get_class($b).", confName = ".$b->GetConfigurationName()." }\n";
 
         if (!($b instanceof functionBenchmark))
             throw new ErrorException('!($b instanceof functionBenchmark)');
 
-        $r['zend_compile_time'] = $this->CalculateBenchmarkTimePercentageChange($b, "GetAverageZendCompileTime");
-        $r['zend_execute_time'] = $this->CalculateBenchmarkTimePercentageChange($b, "GetAverageZendExecuteTime");
+        $r['zend_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
+        $r['zend_execute_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendExecuteTime");
+        $r['zendvm_internal_fcall_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMInternalFunctionCallTime");
+        $r['zendvm_user_fcall_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMUserFunctionCallTime");
 
         return $r;
     }
@@ -84,7 +86,7 @@ class functionBenchmark extends Benchmark
      */
     public function GetAverageZendCompileTime()
     {
-        return $this->CalculateAverageTestsTimeValue("GetZendCompileTime");
+        return $this->GetAverageNumeric("GetZendCompileTime");
     }
 
     /*
@@ -92,7 +94,23 @@ class functionBenchmark extends Benchmark
      */
     public function GetAverageZendExecuteTime()
     {
-        return $this->CalculateAverageTestsTimeValue("GetZendExecuteTime");
+        return $this->GetAverageNumeric("GetZendExecuteTime");
+    }
+
+    /*
+     * Returns average internal function call execution time.
+     */
+    public function GetAverageZendVMInternalFunctionCallTime()
+    {
+        return $this->GetAverageNumeric("GetZendVMInternalFunctionCallTime");
+    }
+
+    /*
+     * Returns average internal function call execution time.
+     */
+    public function GetAverageZendVMUserFunctionCallTime()
+    {
+        return $this->GetAverageNumeric("GetZendVMUserFunctionCallTime");
     }
 }
 
