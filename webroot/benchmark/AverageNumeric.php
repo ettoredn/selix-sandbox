@@ -20,7 +20,7 @@ class AverageNumeric
         $this->values = $values;
     }
 
-    protected function GetValues()
+    public function GetValues()
     {
         if (!is_array($this->values) || count($this->values) < 1)
             throw new ErrorException('!is_array($this->values) || count($this->values) < 1');

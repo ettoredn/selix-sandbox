@@ -1,6 +1,6 @@
 <?php
 require_once("Database.php");
-require_once("BenchmarkResult.php");
+require_once("Gnuplot.php");
 require_once("functionBenchmark.php");
 require_once("phpinfoBenchmark.php");
 
@@ -13,6 +13,8 @@ class Session
     private $configsName;
     // Benchmark[]
     private $benchmarks;
+    // Results cache
+    private $results;
 
     function __construct( $sessionid )
     {
@@ -51,6 +53,29 @@ class Session
     function GetBenchmarks()
     { return $this->benchsName; }
 
+    protected function GetBenchmarksByName( $name, $set = null )
+    {
+        if (empty($set))
+            $set = $this->benchmarks;
+
+        $result = array();
+        foreach ($set as $b)
+            if ($b->GetName() == $name)
+                $result[] = $b;
+
+        return $result;
+    }
+
+    protected function GetBenchmarksByConfiguration( $confName )
+    {
+        $res = null;
+        foreach ($this->benchmarks as $b)
+            if ($b->GetConfigurationName() == $confName)
+                $res[] = $b;
+
+        return $res;
+    }
+
     protected function AddBenchmark( $b )
     { $this->benchmarks[] = $b; }
 
@@ -60,7 +85,7 @@ class Session
             $this->LoadBenchmarksByConfiguration( $conf );
     }
 
-    private function LoadBenchmarksByConfiguration( $configuration, $table = Database::TRACEDATA_TABLE )
+    protected function LoadBenchmarksByConfiguration( $configuration, $table = Database::TRACEDATA_TABLE )
     {
         foreach ($this->benchsName as $benchName)
         {
@@ -115,10 +140,133 @@ class Session
         }
     }
 
-    public function GetResults()
+    /*
+     * Compare benchmarks configurations.
+     * $configs holds an array of configuration names, first element is taken as baseline.
+     *
+     * Returns: array( configName => array( benchmarkName => array( benchmarkItem => %overhead ) ) )
+     */
+    protected function CompareBenchmarks( $baseConf )
     {
-        $result = new BenchmarkResult( $this->benchmarks );
-        return $result->CompareBenchmarks( array("php", "selix") );
+        // First element is taken as baseline
+        $baseBenchs = $this->GetBenchmarksByConfiguration($baseConf);
+        if (empty($baseBenchs)) throw new ErrorException('empty($baseBenchs)');
+
+        $res = array();
+        foreach ($this->configsName as $conf)
+        {
+            if ($conf == $baseConf)
+                continue;
+
+            $benchs = $this->GetBenchmarksByConfiguration( $conf );
+            if (empty($benchs)) throw new ErrorException('empty($benchs)');
+
+            $res[$conf] = $this->CompareBenchmarkSets( $baseBenchs, $benchs );
+        }
+
+        return $res;
+    }
+
+    /*
+     * Compare two sets of benchmarks.
+     * Each comparing set's (benchmark) object must have an object of the same class in the compared set.
+     *
+     * Returns: array( benchmarkName => comparisonResult )
+     */
+    protected function CompareBenchmarkSets( $baseSet, $set )
+    {
+        $res = array();
+        foreach ($set as $bench)
+        {
+            if (!($bench instanceof Benchmark))
+                throw new ErrorException('!($bench instanceof Benchmark)');
+            $benchName = $bench->GetName();
+
+            // Each set must have only one benchmark for a given name
+            $baseBench = $this->GetBenchmarksByName( $benchName, $baseSet );
+            if (count($baseBench) > 1)
+                throw new ErrorException('count($baseBench) > 1');
+            $baseBench = $baseBench[0];
+
+            $res[$benchName] = $bench->CompareTo( $baseBench );
+        }
+
+        return $res;
+    }
+
+    /*
+     * $configs holds an array of configuration names, first element is taken as baseline.
+     */
+    public function GetRawResults( $baseConf )
+    {
+        if (empty($this->results) || !is_array($this->results))
+            $this->results = $this->CompareBenchmarks( $baseConf );
+
+        // Sort results by benchmark
+        $res = array();
+        foreach ($this->benchsName as $benchName)
+            foreach (array_keys($this->results) as $confName)
+                $res[$benchName][$confName] = $this->results[$confName][$benchName];
+
+        return $res;
+    }
+
+    /*
+     * Plot results of a given benchmark into a PNG file and returns its filename.
+     */
+    public function GetBenchmarkResult( $benchName, $baseConf )
+    {
+        if (empty($benchName))
+            throw new ErrorException('empty($benchName)');
+
+        $results = $this->GetRawResults($baseConf);
+        if (empty($results[$benchName]) || !is_array($results[$benchName]))
+            throw new ErrorException('empty($results[$benchName]) || !is_array($results[$benchName])');
+
+        $filename = "bench_$benchName.png";
+        $title = "$benchName.php Benchmark";
+
+        // Build plot data for gnuplot
+        $results = $results[$benchName];
+        $configs = array_keys($results);
+        $tests = array_keys($results[$configs[0]]); // Tests are the same across configs
+
+        $plotData = array(array());
+
+        // Write header
+        $plotData[0][0] = "Benchmark";
+        $plotData[0][1] = "Test";
+        for ($c=0; $c < count($configs); $c++)
+            $plotData[0][$c+2] = $configs[$c];
+
+        // Write entries
+        $row = 1;
+        foreach ($tests as $test)
+        {
+            $plotData[$row][0] = $benchName;
+            $plotData[$row][1] = $test;
+            for ($c=0; $c < count($configs); $c++)
+                        $plotData[$row][$c+2] = $results[$configs[$c]][$test]['delta'];
+            $row++;
+        }
+
+        // Implode entries
+        foreach ($plotData as $key => $entry)
+            $plotData[$key] = implode(" ", $entry);
+
+        $plot = new Gnuplot();
+        $plot->Open();
+        $plot->SetPlotStyle(new ClusteredHistogramPlotStyle()); // Reset
+        $plot->SetYLabel("overhead [microseconds]");
+        $plot->SetYRange(0, "*");
+        $plot->PlotDataToPNG($title, $filename,
+            'using ($3/1000.0):xtic(2) title columnhead(3)',
+            array($plotData),
+            "1280,768"
+        );
+        $plot->Close();
+
+        return Gnuplot::DATAPATH."bench_$benchName.png";
     }
 }
 ?>

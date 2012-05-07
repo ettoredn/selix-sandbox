@@ -29,3 +29,4 @@ webroot/magento/
 webroot/magento-1.6.0.0.tar.bz2
 webroot/magento-sample-data-1.2.0.tar.bz2
 benchmark/traces/
+webroot/benchmark/data/

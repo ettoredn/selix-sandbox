@@ -71,17 +71,17 @@ abstract class Benchmark
                     ", thisBench = ".$thisAvg->GetMean().", diff = $delta, percent = $percent, res = $res }\n";
 
         return array(
-            'standard_error' => array(
-                'base_relative' => round($baseAvg->GetRelativeStandardError(), 1),
-                'this_relative' => round($thisAvg->GetRelativeStandardError(), 1)
+            'standard_error_relative' => array(
+                'base' => round($baseAvg->GetRelativeStandardError(), 1),
+                'this' => round($thisAvg->GetRelativeStandardError(), 1)
             ),
             'delta' => round($delta),
-            'percentage' => round($res, 1)
+            'delta_relative' => round($res, 1)
         );
     }
 
     /*
-     * Instantiates a new Average object filled by values returned by a method called on every Test loaded.
+     * Instantiates a new Average object filled with values returned by a method called on every Test loaded.
      */
     protected function GetAverageNumeric( $method )
     {

@@ -73,13 +73,15 @@ if (!empty($_GET['bench']))
     } catch (ErrorException $e)
     { die("<p>Session $id doesn't exist</p>"); }
     $s->LoadBenchmarks();
-    $results = $s->GetResults();
+    $raw = $s->GetRawResults( "php" );
+    $image = $s->GetBenchmarkResult( "function", "php" );
 
     // Get verbose output produced
     $verbose = ob_get_clean();
 
+    echo "<img src='$image' width='100%'/>";
     echo '<pre>';
-    print_r( $results );
+    print_r( $raw );
     echo '</pre>';
 
     echo '<p><a href="#" onclick="switchVerbose(); return false;">Show/hide verbose</a></p>';
