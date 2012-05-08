@@ -74,12 +74,21 @@ if (!empty($_GET['bench']))
     { die("<p>Session $id doesn't exist</p>"); }
     $s->LoadBenchmarks();
     $raw = $s->GetRawResults( "php" );
-    $image = $s->GetBenchmarkResult( "function", "php" );
+    $functionBenchmarkImage = $s->PlotBenchmark("function", array(
+//        "zend_execute_time",
+        "zendvm_user_fcall_time",
+        "zendvm_internal_fcall_time",
+    ), "php");
+    $phpinfoBenchmarkImage = $s->PlotBenchmark("phpinfo", array(
+        "zend_compile_time",
+        "zend_execute_time",
+    ), "php");
 
     // Get verbose output produced
     $verbose = ob_get_clean();
 
-    echo "<img src='$image' width='100%'/>";
+    echo "<img src='$functionBenchmarkImage' width='100%'/>";
+    echo "<img src='$phpinfoBenchmarkImage' width='100%'/>";
     echo '<pre>';
     print_r( $raw );
     echo '</pre>';

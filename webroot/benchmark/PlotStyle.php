@@ -12,7 +12,21 @@ class ClusteredHistogramPlotStyle extends PlotStyle
         return '
             set style histogram clustered gap 2
             set style data histograms
-            set style fill solid 0.5
+            set style fill solid 0.4
+            set xtics border nomirror out
+        ';
+    }
+}
+
+class ErrorHistogramPlotStyle extends PlotStyle
+{
+    public function GetRawCommands()
+    {
+        return '
+            set style histogram errorbars gap 2 lw 1
+            set style data histograms
+            set style fill solid 0.4
+            set bars 8
             set xtics border nomirror out
         ';
     }

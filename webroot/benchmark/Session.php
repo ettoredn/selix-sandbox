@@ -133,8 +133,7 @@ class Session
 
             if ($GLOBALS['verbose'])
                 echo "Benchmark loaded { name = ".$b->GetName().", test_count = ".$b->GetTestCount().
-                        ", avg_execution_mean = ".$b->GetAverageExecutionTime()->GetMean().
-                        ", avg_execution_stddev = ".$b->GetAverageExecutionTime()->GetStandardDeviation()." }\n";
+                        ", avg_execution_mean = ".$b->GetAverageExecutionTime()->GetMedian()." }\n";
 
 //            $b->GetAverageExecutionTime()->WriteValuesToFile("bench_".$b->GetName()."_".$b->GetConfigurationName().".txt");
         }
@@ -155,9 +154,8 @@ class Session
         $res = array();
         foreach ($this->configsName as $conf)
         {
-            if ($conf == $baseConf)
-                continue;
-
+//            if ($conf == $baseConf)
+//                continue;
             $benchs = $this->GetBenchmarksByConfiguration( $conf );
             if (empty($benchs)) throw new ErrorException('empty($benchs)');
 
@@ -199,6 +197,7 @@ class Session
      */
     public function GetRawResults( $baseConf )
     {
+        // Check cache
         if (empty($this->results) || !is_array($this->results))
             $this->results = $this->CompareBenchmarks( $baseConf );
 
@@ -214,39 +213,58 @@ class Session
     /*
      * Plot results of a given benchmark into a PNG file and returns its filename.
      */
-    public function GetBenchmarkResult( $benchName, $baseConf )
+    public function PlotBenchmark( $benchName, $properties, $baseConf, $scaleName = "microseconds" )
     {
-        if (empty($benchName))
-            throw new ErrorException('empty($benchName)');
+        if (empty($benchName) || !is_array($properties))
+            throw new ErrorException('empty($benchName) || !is_array($properties)');
 
         $results = $this->GetRawResults($baseConf);
         if (empty($results[$benchName]) || !is_array($results[$benchName]))
             throw new ErrorException('empty($results[$benchName]) || !is_array($results[$benchName])');
 
-        $filename = "bench_$benchName.png";
-        $title = "$benchName.php Benchmark";
+        $filename = $this->GetId()."_bench_$benchName.png";
+        $title = "Benchmark $benchName.php";
+        switch ($scaleName)
+        {
+            case 'milliseconds': $scale = "1000000.0"; break;
+            case 'microseconds': $scale = "1000.0"; break;
+            case 'nanoseconds': $scale = "1.0"; break;
+            default: throw new ErrorException("Unknown scale name $scaleName");
+        }
 
         // Build plot data for gnuplot
+        $columnsPerConfig = 3;
         $results = $results[$benchName];
         $configs = array_keys($results);
-        $tests = array_keys($results[$configs[0]]); // Tests are the same across configs
-
         $plotData = array(array());
 
         // Write header
         $plotData[0][0] = "Benchmark";
         $plotData[0][1] = "Test";
-        for ($c=0; $c < count($configs); $c++)
-            $plotData[0][$c+2] = $configs[$c];
+        for ($c=0; $c < count($configs)*$columnsPerConfig; $c+=$columnsPerConfig)
+        {
+            $ci = (int)($c/$columnsPerConfig);
+            $plotData[0][$c+2] = $configs[$ci];
+            $plotData[0][$c+3] = "LQ";
+            $plotData[0][$c+4] = "UQ";
+        }
 
         // Write entries
         $row = 1;
-        foreach ($tests as $test)
+        foreach ($properties as $test)
         {
             $plotData[$row][0] = $benchName;
             $plotData[$row][1] = $test;
-            for ($c=0; $c < count($configs); $c++)
-                        $plotData[$row][$c+2] = $results[$configs[$c]][$test]['delta'];
+            for ($c=0; $c < count($configs)*$columnsPerConfig; $c+=$columnsPerConfig)
+            {
+                $ci = (int)($c/$columnsPerConfig);
+                if (empty($results[$configs[$ci]][$test]))
+                    throw new ErrorException('$results[$configs[$ci]][$test]');
+
+                $plotData[$row][$c+2] = $results[$configs[$ci]][$test]['median'];
+                $plotData[$row][$c+3] = $results[$configs[$ci]][$test]['quartiles'][0];
+                $plotData[$row][$c+4] = $results[$configs[$ci]][$test]['quartiles'][2];
+            }
             $row++;
         }
 
@@ -254,19 +272,34 @@ class Session
         foreach ($plotData as $key => $entry)
             $plotData[$key] = implode(" ", $entry);
 
+        // Build plot line
+        $plotArgs = array();
+        $i = 3;
+        foreach ($configs as $c)
+            $plotArgs[] =
+                    'using ($'.$i++.'/'.$scale.'):'.
+                          '($'.$i++.'/'.$scale.'):'.
+                          '($'.$i++.'/'.$scale.'):'.
+                          'xtic(2) title columnhead('.($i-3).')';
+
+        //        print_r($plotData);
         $plot = new Gnuplot();
         $plot->Open();
-        $plot->SetPlotStyle(new ClusteredHistogramPlotStyle()); // Reset
-        $plot->SetYLabel("overhead [microseconds]");
+        $plot->SetPlotStyle(new ErrorHistogramPlotStyle()); // Reset
+        $plot->SetYLabel("time [$scaleName]");
         $plot->SetYRange(0, "*");
         $plot->PlotDataToPNG($title, $filename,
-            'using ($3/1000.0):xtic(2) title columnhead(3)',
-            array($plotData),
+            array(
+                'using ($3/1000.0):($4/1000.0):($5/1000.0):xtic(2) title columnhead(3)',
+                'using ($6/1000.0):($7/1000.0):($8/1000.0):xtic(2) title columnhead(6)'
+                ),
+            array($plotData, $plotData),
             "1280,768"
         );
         $plot->Close();
+        print_r(implode("\n",$plot->GetLog()));
 
-        return Gnuplot::DATAPATH."bench_$benchName.png";
+        return Gnuplot::DATAPATH.$filename;
     }
 }
 ?>

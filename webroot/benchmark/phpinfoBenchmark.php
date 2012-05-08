@@ -68,7 +68,7 @@ class phpinfoBenchmark extends Benchmark
     public function CompareTo( Benchmark $b )
     {
         if ($GLOBALS['verbose_maths'])
-            echo "[".get_class($this)."/CompareTo] { benchmark = ".get_class($b)." }\n";
+            echo "[".get_class($this)."/CompareTo] { benchmark = ".get_class($b).", confName = ".$b->GetConfigurationName()." }\n";
 
         if (!($b instanceof phpinfoBenchmark))
             throw new ErrorException('!($b instanceof phpinfoBenchmark)');

@@ -115,15 +115,15 @@ class Gnuplot
      */
     public function PlotDataToPNG( $title, $filename, $args, $dataSets, $size = "640,480" )
     {
-        if (!is_array($dataSets) || count($dataSets) < 1 || strstr($filename, "/") != FALSE)
-            throw new ErrorException('!is_array($data) || count($data) < 1 || strstr($filename, "/")');
+        if (!is_array($args) || !is_array($dataSets) || count($dataSets) < 1 || strstr($filename, "/") != FALSE)
+            throw new ErrorException('!is_array($args) || !is_array($data) || count($data) < 1 || strstr($filename, "/")');
 
         $this->WriteLine('
             set terminal push
             set terminal png size '. $size .'
             set output "'. self::DATAPATH.$filename .'"
             set title "'. $title .'"
-            plot "-" '.$args.'
+            plot "-" '. implode(', "" ', $args) .'
         ');
 
         foreach ($dataSets as $block)

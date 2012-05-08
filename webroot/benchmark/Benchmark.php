@@ -63,20 +63,21 @@ abstract class Benchmark
             throw new ErrorException('!($baseAverage instanceof AverageNumeric) || !($thisAverage instanceof AverageNumeric)');
 
         // Overhhead = (new_result - old_result) / old_result
-        $delta = bcsub($thisAvg->GetMean(), $baseAvg->GetMean(), AverageNumeric::PRECISION);
-        $percent = bcdiv($delta, $baseAvg->GetMean(), AverageNumeric::PRECISION);
+        $delta = bcsub($thisAvg->GetMedian(), $baseAvg->GetMedian(), AverageNumeric::PRECISION);
+        $percent = bcdiv($delta, $baseAvg->GetMedian(), AverageNumeric::PRECISION);
         $res = bcmul($percent , 100, AverageNumeric::PRECISION);
         if ($GLOBALS['verbose_maths'])
-            echo "[".get_class($this)."/CalculateBenchmarkNumericDelta] { baseBench = ".$baseAvg->GetMean().
-                    ", thisBench = ".$thisAvg->GetMean().", diff = $delta, percent = $percent, res = $res }\n";
+            echo "[".get_class($this)."/CalculateBenchmarkNumericDelta] { baseBench = ".$baseAvg->GetMedian().
+                    ", thisBench = ".$thisAvg->GetMedian().", diff = $delta, percent = $percent, res = $res }\n";
 
         return array(
-            'standard_error_relative' => array(
-                'base' => round($baseAvg->GetRelativeStandardError(), 1),
-                'this' => round($thisAvg->GetRelativeStandardError(), 1)
-            ),
-            'delta' => round($delta),
-            'delta_relative' => round($res, 1)
+            'median' => $thisAvg->GetMedian(),
+            'quartiles' => $thisAvg->GetQuartiles(),
+            'iqr' => $thisAvg->GetIQR(),
+            'delta' => array(
+                'absolute' => round($delta),
+                'relative' => round($res, 1),
+            )
         );
     }
 
