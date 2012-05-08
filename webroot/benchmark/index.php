@@ -78,11 +78,11 @@ if (!empty($_GET['bench']))
 //        "zend_execute_time",
         "zendvm_user_fcall_time",
         "zendvm_internal_fcall_time",
-    ), "php");
+    ));
     $phpinfoBenchmarkImage = $s->PlotBenchmark("phpinfo", array(
         "zend_compile_time",
         "zend_execute_time",
-    ), "php");
+    ));
 
     // Get verbose output produced
     $verbose = ob_get_clean();

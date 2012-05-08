@@ -45,7 +45,7 @@ class AverageNumeric
         return $this->values; // Returns a copy
     }
 
-    protected function CountValues()
+    protected function Count()
     {
         // Check for cached result
         if (!isset($this->numValues))
@@ -57,7 +57,7 @@ class AverageNumeric
     /*
      * Returns the sum of all values.
      */
-    protected function GetSum()
+    protected function Sum()
     {
         // Check for cached result
         if (!isset($this->sum))
@@ -89,7 +89,7 @@ class AverageNumeric
         else
             return bcadd($data[floor($middle)], 0, self::PRECISION); // convert to string for uniformity with bcmath
     }
-    public function GetMedian()
+    public function Median()
     {
         // Check for cached result
         if (!isset($this->median))
@@ -142,7 +142,7 @@ class AverageNumeric
     /*
      * Returns array( first, median, third )
      */
-    public function GetQuartiles()
+    public function Quartiles()
     {
         // Check for cached result
         if (!isset($this->quartiles))
@@ -154,12 +154,12 @@ class AverageNumeric
     /*
      * http://en.wikipedia.org/wiki/Interquartile_range
      */
-    public function GetIQR()
+    public function IQR()
     {
         // Check for cached result
         if (!isset($this->iqr))
         {
-            $quarts = $this->GetQuartiles();
+            $quarts = $this->Quartiles();
             $this->iqr = bcsub($quarts[2], $quarts[0], self::PRECISION);
         }
 
@@ -212,11 +212,11 @@ class AverageNumericTest extends AverageNumeric
                 "GetValues",
                 array()
             );
-            // Test CountValues()
+            // Test Count()
             self::TestMethod(
                 array($avg1, $avg2, $avg3),
                 array($count0, $count1, $count2),
-                "CountValues",
+                "Count",
                 array()
             );
             // Test GetValues( true )
@@ -230,17 +230,17 @@ class AverageNumericTest extends AverageNumeric
             self::TestMethod(
                 array($avg1, $avg2, $avg3),
                 array("365.000000", "365.000000", "2286.000000"),
-                "GetSum",
+                "Sum",
                 array()
             );
-            // Test GetMedian()
+            // Test Median()
             self::TestMethod(
                 array($avg1, $avg2, $avg3),
                 array("40.000000", "40.000000", "62.000000"),
-                "GetMedian",
+                "Median",
                 array()
             );
-            // Test GetQuartiles()
+            // Test Quartiles()
             self::TestMethod(
                 array($avg1, $avg2, $avg3),
                 array(
@@ -248,14 +248,14 @@ class AverageNumericTest extends AverageNumeric
                     array("20.250000", "40.000000", "42.750000"),
                     array("33.500000", "62.000000", "87.500000")
                 ),
-                "GetQuartiles",
+                "Quartiles",
                 array()
             );
-            // Test GetIQR()
+            // Test IQR()
             self::TestMethod(
                 array($avg1, $avg2, $avg3),
                 array("22.500000", "22.500000", "54.000000"),
-                "GetIQR",
+                "IQR",
                 array()
             );
         }
