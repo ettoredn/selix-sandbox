@@ -4,8 +4,7 @@ class Database
 {
     const SESSION_TABLE = "session";
     const TRACEDATA_TABLE = "tracedata";
-    const PHP_TRACE_TABLE = "tracedata_php";
-    const SELIX_TRACE_TABLE = "tracedata_selix";
+    const SESSION_CACHE_TABLE = "session_cache";
     private static $db;
 
     private function __construct() {}

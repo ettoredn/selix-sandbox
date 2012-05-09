@@ -77,11 +77,12 @@ class Session
         return $res;
     }
 
-    protected function AddBenchmark( $b )
+    protected function AddBenchmark( Benchmark $b )
     { $this->benchmarks[] = $b; }
 
-    function LoadBenchmarks()
+    protected function LoadBenchmarks()
     {
+        unset($this->benchmarks);
         foreach ($this->configsName as $conf )
             $this->LoadBenchmarksByConfiguration( $conf );
     }
@@ -203,23 +204,79 @@ class Session
         return $res;
     }
 
+
+    /*
+     * Returns null if no cache entry is found
+     */
+    protected function GetCachedRawResult( $config )
+    {
+        if (empty($config))
+            throw new ErrorException('!empty($config)');
+
+            $q = "SELECT data
+              FROM ". Database::SESSION_CACHE_TABLE ."
+              WHERE session=". $this->GetId() ."
+              AND baseline_configuration='". $config ."'";
+        $r = Database::GetConnection()->query($q);
+        if (!$r || $r->rowCount() > 1) throw new ErrorException("Too much cache entries for session ".$this->GetId());
+
+        if ($r->rowCount() == 0)
+            // No cache
+            return null;
+
+        $result = $r->fetch(PDO::FETCH_NUM); $result = unserialize($result[0]);
+
+        if (empty($result))
+            throw new ErrorException('!$result');
+
+        return $result;
+    }
+
+    protected function AddRawResultToCache( $config, $result )
+    {
+        if (empty($config) || empty($result))
+            throw new ErrorException('!empty($config) || empty($result)');
+
+        $serialized = serialize($result);
+
+        $q = "INSERT INTO ". Database::SESSION_CACHE_TABLE ."
+              (session, baseline_configuration, data)
+              VALUES(:session, :baseconf, :data)";
+        $st = Database::GetConnection()->prepare($q);
+        $st->bindParam(':session', $this->GetId(), PDO::PARAM_INT);
+        $st->bindParam(':baseconf', $config, PDO::PARAM_STR, strlen($config));
+        $st->bindParam(':data', $serialized, PDO::PARAM_STR, strlen($serialized));
+        if ($st->execute() != 1)
+            throw new ErrorException('Error adding session raw result to cache!');
+    }
+
     /*
      * $configs holds an array of configuration names, first element is taken as baseline.
      */
     public function GetRawResults( $baseConfArg = null )
     {
         if ($baseConfArg == null)
-            $baseConf = "__nobaseline__"; // Not a shiny choice but should do the job
+            $baseConf = "__nobaseline__"; // Not a shiny choice but does the job
         else
             $baseConf = $baseConfArg;
 
-        // Check cache
+        // Check local cache
         if (empty($this->results) || !array_key_exists($baseConf, $this->results) || empty($this->results[$baseConf]))
         {
-            if ($baseConfArg == null)
-                $this->results[$baseConf] = $this->CompareBenchmarks();
-            else
-                $this->results[$baseConf] = $this->CompareBenchmarks($baseConf);
+            // Check database cache
+            $this->results[$baseConf] = $this->GetCachedRawResult($baseConf);
+            if ($this->results[$baseConf] == null)
+            {
+                // Load benchmarks to generate requested results
+                $this->LoadBenchmarks();
+
+                if ($baseConfArg == null)
+                    $this->results[$baseConf] = $this->CompareBenchmarks(); // __nobaseline__ not know to CompareBenchmarks
+                else
+                    $this->results[$baseConf] = $this->CompareBenchmarks($baseConf);
+
+                $this->AddRawResultToCache($baseConf, $this->results[$baseConf]);
+            }
         }
 
         // Sort results by benchmark

@@ -95,7 +95,7 @@ if (!empty($_GET['bench']))
         $s = new Session( $id );
     } catch (ErrorException $e)
     { die("<p>Session $id doesn't exist</p>"); }
-    $s->LoadBenchmarks();
+
     $raw = $s->GetRawResults();
     $functionBenchmarkImage = $s->PlotBenchmark("function", array(
         "zendvm_user_fcall_time",
@@ -123,7 +123,7 @@ if (!empty($_GET['bench']))
     echo "<pre id='log' style='display: none;'>".$verbose."</pre>";
 
 //    echo '<pre>';
-//    print_r( $raw );
+//    print_r($raw);
 //    echo '</pre>';
 
 }
