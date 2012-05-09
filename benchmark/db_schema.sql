@@ -15,5 +15,6 @@ CREATE TABLE `session` (
   `session` int(11) NOT NULL,
   `benchmarks` text NOT NULL,
   `runs` int(11) NOT NULL,
+  `description` text,
   PRIMARY KEY (`session`)
 );

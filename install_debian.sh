@@ -4,15 +4,15 @@ REQUIRED_PACKAGES="apache2-mpm-worker apache2-threaded-dev libapache2-mod-fastcg
 REQUIRED_APACHE_MODS="actions fastcgi"
 SKIP_APACHE=0
 SKIP_SELIX=0
+SKIP_PASSTHROUGH=0
 SKIP_POLICY=0
 SKIP_MOD_SELINUX=0
 PHP_ENABLE_JIT_AUTOGLOBALS=0
 SELIX_FORCE_CONTEXT_CHANGE=0
-SELIX_VERBOSE=1
 RELABEL_WEBROOT=0
 
 function usage {
-	echo "Usage: $0 [--skip-apache|-a] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--force-context-change] [--enable-jit-autoglobals] [--disable-verbose] [--relabel-webroot]"
+	echo "Usage: $0 [--skip-apache|-a] [--skip-selix|-s] [--skip-policy|-p] [--skip-modselinux|-m] [--skip-passthrough] [--force-context-change] [--enable-jit-autoglobals] [--relabel-webroot]"
 	exit 1
 }
 
@@ -31,7 +31,7 @@ restart_apache=0
 restart_php=0
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-selix,skip-policy,skip-modselinux,force-context-change,enable-jit-autoglobals,disable-verbose,relabel-webroot,help" "anspmh" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "skip-apache,skip-selix,skip-policy,skip-modselinux,skip-passthrough,force-context-change,enable-jit-autoglobals,relabel-webroot,help" "anspmh" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
@@ -40,9 +40,9 @@ do
 		--skip-selix | -s)			SKIP_SELIX=1;shift;;
 		--skip-policy | -p)			SKIP_POLICY=1;shift;;
 		--skip-modselinux | -m)		SKIP_MOD_SELINUX=1;shift;;
+		--skip-passthrough)			SKIP_PASSTHROUGH=1;shift;;
 		--enable-jit-autoglobals)	PHP_ENABLE_JIT_AUTOGLOBALS=1;shift;;
 		--force-context-change)		SELIX_FORCE_CONTEXT_CHANGE=1;shift;;
-		--disable-verbose)			SELIX_VERBOSE=0;shift;;
 		--relabel-webroot)			RELABEL_WEBROOT=1;shift;;
 		--help | -h) usage;;
 		--) shift;break;;
@@ -194,10 +194,10 @@ then
 	restart_apache=1
 fi
 
-### selix PHP extension ###
+### selix Zend extension ###
 if (( $SKIP_SELIX == 0 ))
 then
-	echo -e "\nBuilding selix PHP extension ..."
+	echo -e "\nBuilding selix Zend extension ..."
 	
 	if [[ ! -d selix ]] ; then
 		echo "*** You need to clone selix project into a directory named selix" >&2 && quit 1
@@ -223,7 +223,7 @@ then
 	cd $cwd
 	if (( buildfail != 0 ))
 	then
-		echo "*** Build of php5-selinux module failed." >&2 && quit 1
+		echo "*** Build of selix Zend extension failed." >&2 && quit 1
 	fi
 	
 	echo -e "\tLoading selix extension ..."
@@ -234,11 +234,41 @@ then
 	if (( SELIX_FORCE_CONTEXT_CHANGE == 1 )) ; then
 		echo "selix.force_context_change = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
 	fi
-	if (( SELIX_VERBOSE == 1 )) ; then
-		#echo "selix.verbose = On" >> "/etc/php5/conf.d/selix.ini" || quit 1
-	fi
 	
 	restart_php=1
+fi
+
+### passthrough Zend extension ###
+if (( $SKIP_PASSTHROUGH == 0 ))
+then
+	echo -e "\nBuilding passthrough Zend extension ..."
+	
+	cd zend-passthrough || quit 1
+	buildfail=0
+	
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting phpize ..."
+		phpize --clean >/dev/null || buildfail=1
+		phpize >/dev/null || buildfail=1
+	fi
+	if (( buildfail == 0 )) ; then
+		echo -e "\tExecuting configure ..."
+		./configure >/dev/null || buildfail=1
+	fi
+	
+	if (( buildfail == 0 )) ; then 
+		echo -e "\tExecuting make ..."
+		make >/dev/null || buildfail=1
+	fi
+	
+	cd $cwd
+	if (( buildfail != 0 ))
+	then
+		echo "*** Build of passthrough Zend extension failed." >&2 && quit 1
+	fi
+	
+	echo -e "\tLoading passthrough extension ..."
+	echo ";zend_extension=$cwd/zend-passthrough/modules/passthrough.so" > "/etc/php5/conf.d/passthrough.ini" || quit 1
 fi
 
 ### label webroot test links and *.php files ###

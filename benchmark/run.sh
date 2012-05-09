@@ -6,6 +6,7 @@ DB_DATABASE="php_benchmark"
 DB_TABLE_SESSION="session"
 DB_TABLE_TRACEDATA="tracedata"
 SELIX_INI="/etc/php5/conf.d/selix.ini"
+PASSTHROUGH_INI="/etc/php5/conf.d/passthrough.ini"
 TRACES_DIR="/dev/shm/traces"
 SQL_TMP_PATH="/dev/shm"
 BABELTRACE_ARGS="--clock-seconds -n header,args -f loglevel"
@@ -19,7 +20,7 @@ ENV_ARGS="LD_PRELOAD=liblttng-ust-fork.so\
  SELINUX_COMPILE_RANGE=s0"
 
 function usage {
-	echo "Usage: $0 [--count=N]"
+	echo "Usage: $0 [--count=N] [--description=\"text\"]"
 	exit 1
 }
 
@@ -33,10 +34,17 @@ function enable_selix {
 	# echo "Enabling selix extension ..."
 	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)selix\.so$/zend_extension=\1selix.so/' "$SELIX_INI"
 }
-
 function disable_selix {
 	# echo "Disabling selix extension ..."
 	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)selix\.so$/;zend_extension=\1selix.so/' "$SELIX_INI"
+}
+function enable_passthrough {
+	# echo "Enabling passthrough extension ..."
+	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)passthrough\.so$/zend_extension=\1passthrough.so/' "$PASSTHROUGH_INI"
+}
+function disable_passthrough {
+	# echo "Disabling passthrough extension ..."
+	sudo sed -i 's/^;\?.*zend_extension\s*=\s*\(.*\)passthrough\.so$/;zend_extension=\1passthrough.so/' "$PASSTHROUGH_INI"
 }
 
 function run_benchmarks {
@@ -84,9 +92,10 @@ abspath=$(cd ${0%/*} && echo $PWD/${0##*/})
 cwd=$( dirname "$abspath" )
 ecwd=$( echo $cwd | sed 's/\//\\\//g' )
 lttng_session=$( date +%s )
+description=""
 
 # Evaluate options
-newopts=$( getopt -n"$0" --longoptions "count:,help" "h" "$@" ) || usage
+newopts=$( getopt -n"$0" --longoptions "count:,description:,help" "h" "$@" ) || usage
 set -- $newopts
 while (( $# >= 0 ))
 do
@@ -97,6 +106,9 @@ do
 						echo "*** count argument must be > 0" >&2 && quit 1
 					fi
 					shift;shift;;
+		--description)	description=$( echo $@ | sed "s/--description '\([[:print:]]\+\)' --/\1/" )
+					set -- $( echo $@ | sed "s/'\([[:print:]]*\)'//" )
+					shift;;
 		# --niceness)	NICENESS=$( echo $2 | sed "s/'//g" )
 		# 			NICE_ARGS="nice -n $NICENESS"
 		# 			
@@ -120,10 +132,10 @@ do
 	run_tests="$run_tests $testfile"
 done
 
-# SELinux should be disabled
+# SELinux should be in permissive mode
 if [[ $( cat /selinux/enforce ) != 0 ]]
 then
-	echo "*** SELinux must be disabled" >&2 && quit 1
+	echo "*** SELinux must be in permissive mode" >&2 && quit 1
 fi
 
 # Check LTTng v2
@@ -144,16 +156,29 @@ then
 	# the extension load directive must be present
 	egrep 'zend_extension.*selix.so$' "$SELIX_INI" &>/dev/null || ( echo "*** Extension load directive must be present in $SELIX_INI" >&2 && quit 1 )
 	
-	# Enable selix
+	# Disable selix
 	echo "selix extension detected as enabled. Disabling ..."
 	disable_selix
 fi
 
-### Run benchmarks with selix extension disabled ###
-echo -e "\nRunning benchmarks $BENCHMARK_COUNT times with selix disabled ..."
+# passthrough extension must be disabled
+if (( $( php -m | egrep '^passthrough$' | wc -l ) > 0 ))
+then
+	# passthrough not loaded
+	[ -f "$PASSTHROUGH_INI" ] || ( echo "*** $PASSTHROUGH_INI must be present" >&2 && quit 1 )
+	
+	# the extension load directive must be present
+	egrep 'zend_extension.*passthrough.so$' "$PASSTHROUGH_INI" &>/dev/null || ( echo "*** Extension load directive must be present in $PASSTHROUGH_INI" >&2 && quit 1 )
+	
+	# Disable passthrough
+	echo "passthrough extension detected as enabled. Disabling ..."
+	disable_passthrough
+fi
+
+### Run benchmarks with php basic configuration (selix/passthrough disabled) ###
+echo -e "\nRunning benchmarks $BENCHMARK_COUNT times with php ..."
 tracepath="$TRACES_DIR/php"
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
-
 # Create LTTng session
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
 lttng enable-event "PHP_PHP:*" -u --tracepoint >/dev/null || quit 1
@@ -165,12 +190,28 @@ run_benchmarks
 lttng stop "$lttng_session" >/dev/null || quit 1
 lttng destroy "$lttng_session" >/dev/null || quit 1
 
+### Run benchmarks with passthrough extension enabled ###
+echo -e "\nRunning benchmarks $BENCHMARK_COUNT times in passthrough configuration ..."
+enable_passthrough
+tracepath="$TRACES_DIR/passthrough"
+rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
+# Create LTTng session
+lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
+lttng enable-event "PHP_PHP:*" -u --tracepoint >/dev/null || quit 1
+lttng enable-event "PHP_Zend:*" -u --tracepoint >/dev/null || quit 1
+lttng start "$lttng_session" >/dev/null || quit 1
+# Run benchmarks
+run_benchmarks
+# Destroy LTTng session
+lttng stop "$lttng_session" >/dev/null || quit 1
+lttng destroy "$lttng_session" >/dev/null || quit 1
+disable_passthrough
+
 ### Run benchmarks with selix extension enabled ###
 echo -e "\nRunning benchmarks $BENCHMARK_COUNT times with selix enabled ..."
 enable_selix
 tracepath="$TRACES_DIR/selix"
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
-
 # Create LTTng session
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
 lttng enable-event "PHP_PHP:*" -u --tracepoint >/dev/null || quit 1
@@ -187,20 +228,26 @@ lttng destroy "$lttng_session" >/dev/null || quit 1
 echo -e "\nLoading trace data into database ..."
 sqltmpfile="$SQL_TMP_PATH/$lttng_session.sql"
 echo "START TRANSACTION;" > "$sqltmpfile"
-while read line
-do
-	parse_tracedata "selix"
-done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/selix" )"
 
 while read line
 do
 	parse_tracedata "php"
 done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/php" )"
 
+while read line
+do
+	parse_tracedata "passthrough"
+done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/passthrough" )"
+
+while read line
+do
+	parse_tracedata "selix"
+done <<< "$( babeltrace $BABELTRACE_ARGS "$TRACES_DIR/selix" )"
+
 # Session info
 run_tests=$( echo ${run_tests:1} | sed 's/\.php//g' )
-echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks, runs) \
-	VALUES( $lttng_session, '$run_tests', $BENCHMARK_COUNT );" >> "$sqltmpfile"
+echo "INSERT INTO $DB_TABLE_SESSION (session, benchmarks, runs, description) \
+	VALUES( $lttng_session, '$run_tests', $BENCHMARK_COUNT, '$description' );" >> "$sqltmpfile"
 
 echo "COMMIT;" >> "$sqltmpfile"
 mysql -u "$DB_USER" -p"$DB_PASS" -D "$DB_DATABASE" < "$sqltmpfile" || quit 1

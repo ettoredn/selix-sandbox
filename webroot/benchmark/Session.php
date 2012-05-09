@@ -2,6 +2,7 @@
 require_once("Database.php");
 require_once("Gnuplot.php");
 require_once("functionBenchmark.php");
+require_once("helloworldBenchmark.php");
 require_once("phpinfoBenchmark.php");
 
 class Session
@@ -145,14 +146,16 @@ class Session
      *
      * Returns: array( configName => array( benchmarkName => array( benchmarkItem => %overhead ) ) )
      */
-    protected function CompareBenchmarks( $baseConf = null )
+    protected function CompareBenchmarks( $baseConfArg = null )
     {
-        if ($baseConf == null)
+        if ($baseConfArg == null)
         {
             // Defaults to first configuration
             $baseConf = $this->GetConfigurations();
             $baseConf = $baseConf[0];
         }
+        else
+            $baseConf = $baseConfArg;
 
         // First element is taken as baseline
         $baseBenchs = $this->GetBenchmarksByConfiguration($baseConf);
@@ -161,8 +164,9 @@ class Session
         $res = array();
         foreach ($this->configsName as $conf)
         {
-//            if ($conf == $baseConf)
-//                continue;
+            if ($baseConfArg != null && $conf == $baseConfArg)
+                continue;
+
             $benchs = $this->GetBenchmarksByConfiguration( $conf );
             if (empty($benchs)) throw new ErrorException('empty($benchs)');
 
@@ -202,15 +206,17 @@ class Session
     /*
      * $configs holds an array of configuration names, first element is taken as baseline.
      */
-    public function GetRawResults( $baseConf = null )
+    public function GetRawResults( $baseConfArg = null )
     {
-        if ($baseConf == null)
+        if ($baseConfArg == null)
             $baseConf = "__nobaseline__"; // Not a shiny choice but should do the job
+        else
+            $baseConf = $baseConfArg;
 
         // Check cache
         if (empty($this->results) || !array_key_exists($baseConf, $this->results) || empty($this->results[$baseConf]))
         {
-            if ($baseConf == "__nobaseline__")
+            if ($baseConfArg == null)
                 $this->results[$baseConf] = $this->CompareBenchmarks();
             else
                 $this->results[$baseConf] = $this->CompareBenchmarks($baseConf);
@@ -298,10 +304,15 @@ class Session
 
         $results = $this->GetRawResults();
         if (empty($results[$benchName]) || !is_array($results[$benchName]))
-            throw new ErrorException('empty($results[$benchName]) || !is_array($results[$benchName])');
+        {
+            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
+            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
+            return Gnuplot::DATAPATH."notfound.png";
+
+        }
 
         $filename = $this->GetId()."_bench_$benchName.png";
-        $title = "Benchmark $benchName.php";
+        $title = "Benchmark for $benchName.php";
         switch ($scaleName)
         {
             case 'milliseconds': $scale = "1000000.0"; break;
@@ -319,16 +330,20 @@ class Session
         ));
 //        print_r($plotData);
 
-        // Build plot line
-//        $configs = array_keys($results);
-//        $plotArgs = array();
-//        $i = 3;
-//        foreach ($configs as $c)
-//            $plotArgs[] =
-//                    'using ($'.$i++.'/'.$scale.'):'.
-//                          '($'.$i++.'/'.$scale.'):'.
-//                          '($'.$i++.'/'.$scale.'):'.
-//                          'xtic(2) title columnhead('.($i-3).')';
+        // Build plot arguments
+        $configs = array_keys($results);
+        $plotArgs = array();
+        $plotDataArgs = array();
+        $i = 3; // Properties number
+        foreach ($configs as $c)
+        {
+            $plotArgs[] =
+                    'using ($'.$i++.'/'.$scale.'):'.
+                          '($'.$i++.'/'.$scale.'):'.
+                          '($'.$i++.'/'.$scale.'):'.
+                          'xtic(2) title columnhead('.($i-3).')';
+            $plotDataArgs[] = $plotData; // $plotData must be repeated for each configuration
+        }
 //        print_r(implode("\n", $plotArgs));
 
         $plot = new Gnuplot();
@@ -336,16 +351,69 @@ class Session
         $plot->SetPlotStyle(new ErrorHistogramPlotStyle()); // Reset
         $plot->SetYLabel("time [$scaleName]");
         $plot->SetYRange(0, "*");
-        $plot->PlotDataToPNG($title, $filename,
-            array(
-                'using ($3/'.$scale.'):($4/'.$scale.'):($5/'.$scale.'):xtic(2) title columnhead(3)',
-                'using ($6/'.$scale.'):($7/'.$scale.'):($8/'.$scale.'):xtic(2) title columnhead(6)'
-                ),
-            array($plotData, $plotData),
-            "1280,768"
-        );
+        $plot->PlotDataToPNG($title, $filename, $plotArgs, $plotDataArgs, "1024,768");
         $plot->Close();
 //        print_r(implode("\n",$plot->GetLog()));
+
+        return Gnuplot::DATAPATH.$filename;
+    }
+
+    /*
+     * Plot results of a given benchmark into a PNG file and returns its filename.
+     */
+    public function PlotBenchmarkDelta( $benchName, $tests, $baseConf, $scaleName = "microseconds" )
+    {
+        if (empty($benchName) || empty($baseConf) || !is_array($tests))
+            throw new ErrorException('empty($benchName) || empty($baseConf) || !is_array($properties)');
+
+        $results = $this->GetRawResults($baseConf);
+        if (empty($results[$benchName]) || !is_array($results[$benchName]))
+        {
+            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
+            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
+            return Gnuplot::DATAPATH."notfound.png";
+
+        }
+
+        $filename = $this->GetId()."_bench_$benchName"."_delta_$baseConf.png";
+        $title = "Benchmark delta for $benchName.php with $baseConf configuration as baseline";
+        switch ($scaleName)
+        {
+            case 'milliseconds': $scale = "1000000.0"; break;
+            case 'microseconds': $scale = "1000.0"; break;
+            case 'nanoseconds': $scale = "1.0"; break;
+            default: throw new ErrorException("Unknown scale name $scaleName");
+        }
+
+        // Build plot data for gnuplot
+        $results = $results[$benchName];
+        $plotData = $this->BuildBenchmarkPlotData($benchName, $results, $tests, array(
+                '%configName%' => array('delta', 'absolute')
+        ));
+//        print_r($plotData);
+
+        // Build plot arguments
+        $configs = array_keys($results);
+        $plotArgs = array();
+        $plotDataArgs = array();
+        $i = 3; // Properties number
+        foreach ($configs as $c)
+        {
+            $plotArgs[] =
+                    'using ($'.$i++.'/'.$scale.'):'.
+                          'xtic(2) title columnhead('.($i-1).')';
+            $plotDataArgs[] = $plotData; // $plotData must be repeated for each configuration
+        }
+        print_r(implode("\n", $plotArgs));
+
+        $plot = new Gnuplot();
+        $plot->Open();
+        $plot->SetPlotStyle(new ClusteredHistogramPlotStyle()); // Reset
+        $plot->SetYLabel("time [$scaleName]");
+        $plot->SetYRange(0, "*");
+        $plot->PlotDataToPNG($title, $filename, $plotArgs, $plotDataArgs, "1024,768");
+        $plot->Close();
+        print_r(implode("\n",$plot->GetLog()));
 
         return Gnuplot::DATAPATH.$filename;
     }
