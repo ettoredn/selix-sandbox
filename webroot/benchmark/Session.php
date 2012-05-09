@@ -302,15 +302,6 @@ class Session
         if (empty($benchName) || !is_array($tests))
             throw new ErrorException('empty($benchName) || !is_array($properties)');
 
-        $results = $this->GetRawResults();
-        if (empty($results[$benchName]) || !is_array($results[$benchName]))
-        {
-            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
-            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
-            return Gnuplot::DATAPATH."notfound.png";
-
-        }
-
         $filename = $this->GetId()."_bench_$benchName.png";
         $title = "Benchmark for $benchName.php";
         switch ($scaleName)
@@ -319,6 +310,19 @@ class Session
             case 'microseconds': $scale = "1000.0"; break;
             case 'nanoseconds': $scale = "1.0"; break;
             default: throw new ErrorException("Unknown scale name $scaleName");
+        }
+
+        // If already generated returns it
+        if (file_exists(Gnuplot::DATAPATH.$filename))
+            return Gnuplot::DATAPATH.$filename;
+
+        $results = $this->GetRawResults();
+        if (empty($results[$benchName]) || !is_array($results[$benchName]))
+        {
+            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
+            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
+            return Gnuplot::DATAPATH."notfound.png";
+
         }
 
         // Build plot data for gnuplot
@@ -366,15 +370,6 @@ class Session
         if (empty($benchName) || empty($baseConf) || !is_array($tests))
             throw new ErrorException('empty($benchName) || empty($baseConf) || !is_array($properties)');
 
-        $results = $this->GetRawResults($baseConf);
-        if (empty($results[$benchName]) || !is_array($results[$benchName]))
-        {
-            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
-            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
-            return Gnuplot::DATAPATH."notfound.png";
-
-        }
-
         $filename = $this->GetId()."_bench_$benchName"."_delta_$baseConf.png";
         $title = "Benchmark delta for $benchName.php with $baseConf configuration as baseline";
         switch ($scaleName)
@@ -383,6 +378,19 @@ class Session
             case 'microseconds': $scale = "1000.0"; break;
             case 'nanoseconds': $scale = "1.0"; break;
             default: throw new ErrorException("Unknown scale name $scaleName");
+        }
+
+        // If already generated returns it
+        if (file_exists(Gnuplot::DATAPATH.$filename))
+            return Gnuplot::DATAPATH.$filename;
+
+        $results = $this->GetRawResults($baseConf);
+        if (empty($results[$benchName]) || !is_array($results[$benchName]))
+        {
+            // Perhaps the requested benchmark was not ran in this session, so it just logs a warning.
+            echo "[".__METHOD__."] WARNING: $benchName benchmark not found in session ".$this->GetId()."\n";
+            return Gnuplot::DATAPATH."notfound.png";
+
         }
 
         // Build plot data for gnuplot
@@ -404,7 +412,7 @@ class Session
                           'xtic(2) title columnhead('.($i-1).')';
             $plotDataArgs[] = $plotData; // $plotData must be repeated for each configuration
         }
-        print_r(implode("\n", $plotArgs));
+//        print_r(implode("\n", $plotArgs));
 
         $plot = new Gnuplot();
         $plot->Open();
@@ -413,7 +421,7 @@ class Session
         $plot->SetYRange(0, "*");
         $plot->PlotDataToPNG($title, $filename, $plotArgs, $plotDataArgs, "1024,768");
         $plot->Close();
-        print_r(implode("\n",$plot->GetLog()));
+//        print_r(implode("\n",$plot->GetLog()));
 
         return Gnuplot::DATAPATH.$filename;
     }

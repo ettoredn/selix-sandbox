@@ -99,6 +99,7 @@ abstract class Benchmark
         }
 
         $avg = new AverageNumeric($items);
+//        $avg->WriteValuesToFile($this->GetName() ."_". $method);
 
         return $avg;
     }
