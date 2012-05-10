@@ -3,7 +3,7 @@ require_once("Database.php");
 require_once("Gnuplot.php");
 require_once("functionBenchmark.php");
 require_once("helloworldBenchmark.php");
-require_once("phpinfoBenchmark.php");
+require_once("compileBenchmark.php");
 
 class Session
 {

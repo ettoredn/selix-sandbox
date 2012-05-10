@@ -2,9 +2,9 @@
 require_once("Database.php");
 require_once("Tracepoint.php");
 require_once("Benchmark.php");
-require_once("phpinfoTest.php");
+require_once("compileTest.php");
 
-class phpinfoBenchmark extends Benchmark
+class compileBenchmark extends Benchmark
 {
     public function LoadFromTable( $table )
     {
@@ -48,52 +48,44 @@ class phpinfoBenchmark extends Benchmark
                     if (!class_exists($testClass))
                         throw new ErrorException("Class $testClass is required!");
 
-                    // Instantiate phpinfoTest
-                    $t = new phpinfoTest($timestampStart, $timestampFinish);
+                    $t = new $testClass($timestampStart, $timestampFinish);
                     $this->AddTest( $t );
                     $t->LoadFromTable( $table );
 
                     if ($GLOBALS['verbose'])
-                        echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime().
-                                ", zend_compile_time = ".$t->GetZendCompileTime().
-                                ", zend_execute_time = ".$t->GetZendExecuteTime()." }\n";
+                        echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime()." }\n";
                     break;
             }
         }
     }
 
     /*
-     * Returns an array with percentage changes from another phpinfoBenchmark (taken as baseline).
+     * Returns an array with percentage changes from another compileBenchmark (taken as baseline).
      */
     public function CompareTo( Benchmark $b )
     {
         if ($GLOBALS['verbose_maths'])
             echo "[".get_class($this)."/CompareTo] { benchmark = ".get_class($b).", confName = ".$b->GetConfigurationName()." }\n";
 
-        if (!($b instanceof phpinfoBenchmark))
-            throw new ErrorException('!($b instanceof phpinfoBenchmark)');
+        if (!($b instanceof compileBenchmark))
+            throw new ErrorException('!($b instanceof compileBenchmark)');
 
         $r['zend_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
-        $r['zend_execute_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendExecuteTime");
+        $r['zend_nested_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendNestedCompileTime");
 
         return $r;
     }
 
-    /*
-     * Returns average zend_compile execution time.
-     */
     public function GetAverageZendCompileTime()
     {
         return $this->GetAverageNumeric("GetZendCompileTime");
     }
 
-    /*
-     * Returns average zend_execute execution time.
-     */
-    public function GetAverageZendExecuteTime()
+    public function GetAverageZendNestedCompileTime()
     {
-        return $this->GetAverageNumeric("GetZendExecuteTime");
+        return $this->GetAverageNumeric("GetZendNestedCompileTime");
     }
+    
 }
 
 ?>

@@ -97,25 +97,40 @@ if (!empty($_GET['bench']))
     { die("<p>Session $id doesn't exist</p>"); }
 
     $raw = $s->GetRawResults();
-    $functionBenchmarkImage = $s->PlotBenchmark("function", array(
-        "zendvm_user_fcall_time",
-        "zendvm_internal_fcall_time",
-    ));
     $helloworld = $s->PlotBenchmark("helloworld", array(
         "zend_compile_time",
         "zend_execute_time",
+    ));
+    $compile = $s->PlotBenchmark("compile", array(
+        "zend_compile_time",
+        "zend_nested_compile_time",
+    ));
+    $function = $s->PlotBenchmark("function", array(
+        "zendvm_user_fcall_time",
+        "zendvm_internal_fcall_time",
     ));
     $helloworldDelta = $s->PlotBenchmarkDelta("helloworld", array(
         "zend_compile_time",
         "zend_execute_time",
     ), "php");
+    $compileDelta = $s->PlotBenchmarkDelta("compile", array(
+        "zend_compile_time",
+        "zend_nested_compile_time",
+    ), "php");
+    $functionDelta = $s->PlotBenchmarkDelta("function", array(
+        "zendvm_user_fcall_time",
+        "zendvm_internal_fcall_time",
+    ), "php");
 
     // Get verbose output produced
     $verbose = ob_get_clean();
 
-    echo "<img src='$functionBenchmarkImage' width='731' height='549'/>";
     echo "<img src='$helloworld' width='731' height='549'/>";
+    echo "<img src='$compile' width='731' height='549'/>";
+    echo "<img src='$function' width='731' height='549'/>";
     echo "<img src='$helloworldDelta' width='731' height='549'/>";
+    echo "<img src='$compileDelta' width='731' height='549'/>";
+    echo "<img src='$functionDelta' width='731' height='549'/>";
 
     echo '<p><a href="javascript:void(0)" onclick="switchRawData();">Show/hide raw data</a></p>';
     echo "<pre id='rawData' style='display: none;'>".print_r($raw, true)."</pre>";

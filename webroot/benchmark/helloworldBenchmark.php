@@ -48,15 +48,12 @@ class helloworldBenchmark extends Benchmark
                     if (!class_exists($testClass))
                         throw new ErrorException("Class $testClass is required!");
 
-                    // Instantiate helloworldTest
-                    $t = new helloworldTest($timestampStart, $timestampFinish);
+                    $t = new $testClass($timestampStart, $timestampFinish);
                     $this->AddTest( $t );
                     $t->LoadFromTable( $table );
 
                     if ($GLOBALS['verbose'])
-                        echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime().
-                                ", zend_compile_time = ".$t->GetZendCompileTime().
-                                ", zend_execute_time = ".$t->GetZendExecuteTime()." }\n";
+                        echo "Test loaded { name = ".$t->GetName().", execution_time = ".$t->GetExecutionTime()." }\n";
                     break;
             }
         }
@@ -79,17 +76,11 @@ class helloworldBenchmark extends Benchmark
         return $r;
     }
 
-    /*
-     * Returns average zend_compile execution time.
-     */
     public function GetAverageZendCompileTime()
     {
         return $this->GetAverageNumeric("GetZendCompileTime");
     }
 
-    /*
-     * Returns average zend_execute execution time.
-     */
     public function GetAverageZendExecuteTime()
     {
         return $this->GetAverageNumeric("GetZendExecuteTime");

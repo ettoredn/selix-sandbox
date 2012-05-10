@@ -3,7 +3,7 @@ require_once("Database.php");
 require_once("Test.php");
 require_once("Tracepoint.php");
 
-class phpinfoTest extends Test
+class compileTest extends Test
 {
     public function LoadFromTable( $table )
     {
@@ -14,10 +14,10 @@ class phpinfoTest extends Test
 	            AND `name` IN('PHP_PHP:execute_primary_script_start',
 				              'PHP_Zend:scripts_compile_start',
 				              'PHP_Zend:scripts_compile_finish',
-				              'PHP_Zend:scripts_execute_start',
-				              'PHP_Zend:scripts_execute_finish',
+				              'PHP_Zend:filename_compile_start',
+				              'PHP_Zend:filename_compile_finish',
 				              'PHP_PHP:execute_primary_script_finish')
-			  ORDER BY timestamp ASC";
+              ORDER BY timestamp ASC";
         $r = Database::GetConnection()->query($q);
         if (!$r || $r->rowCount() != 6) throw new ErrorException("Query or data error: $q");
 
@@ -37,31 +37,31 @@ class phpinfoTest extends Test
 
                     if (empty($compileStartTime))
                         throw new ErrorException('empty($compileStartTime)');
-                    $time = $compileFinishTime - $compileStartTime;
-                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compileTime < 1\n";
+                    $delta = $compileFinishTime - $compileStartTime;
+                    if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_compileTime < 1\n";
 
-                    $this->AddData("zend_compileTime", $time);
+                    $this->AddData("zend_compileTime", $delta);
 
                     if ($GLOBALS['verbose'])
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
                                 ", test = ".$this->GetName().", zend_compileTime = ".$this->GetData("zend_compileTime")." }\n";
                     break;
-                case 'PHP_Zend:scripts_execute_start':
-                    $executeStartTime = $trace->GetCPUTime();
+                case 'PHP_Zend:filename_compile_start':
+                    $nestedCompileStartTime = $trace->GetCPUTime();
                     break;
-                case 'PHP_Zend:scripts_execute_finish':
-                    $executeFinishTime = $trace->GetCPUTime();
+                case 'PHP_Zend:filename_compile_finish':
+                    $nestedCompileFinishTime = $trace->GetCPUTime();
 
-                    if (empty($executeStartTime))
-                        throw new ErrorException('empty($executeStartTime)');
-                    $time = $executeFinishTime - $executeStartTime;
-                    if ($time < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_executeTime < 1\n";
+                    if (empty($nestedCompileStartTime))
+                        throw new ErrorException('empty($nestedCompileStartTime)');
+                    $delta = $nestedCompileFinishTime - $nestedCompileStartTime;
+                    if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zend_nestedCompileTime < 1\n";
 
-                    $this->AddData("zend_executeTime", $time);
+                    $this->AddData("zend_nestedCompileTime", $delta);
 
                     if ($GLOBALS['verbose'])
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zend_executeTime = ".$this->GetData("zend_executeTime")." }\n";
+                                ", test = ".$this->GetName().", zend_nestedCompileTime = ".$this->GetData("zend_nestedCompileTime")." }\n";
                     break;
                 case 'PHP_PHP:execute_primary_script_finish':
                     $this->SetTimeFinish($trace->GetCPUTime());
@@ -73,8 +73,7 @@ class phpinfoTest extends Test
     public function GetZendCompileTime()
     { return $this->GetData("zend_compileTime"); }
 
-    public function GetZendExecuteTime()
-    { return $this->GetData("zend_executeTime"); }
-}
+    public function GetZendNestedCompileTime()
+    { return $this->GetData("zend_nestedCompileTime"); }
 
-?>
+}

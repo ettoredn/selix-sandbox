@@ -45,7 +45,11 @@ abstract class Test
     { $this->data[$key] = $value; }
 
     protected function GetData( $key )
-    { return $this->data[$key]; }
+    {
+        if (!array_key_exists($key, $this->data))
+            throw new ErrorException('!array_key_exists($key, $this->data)');
+        return $this->data[$key];
+    }
 
     protected function GetDataKeys()
     { return array_keys( $this->data ); }
