@@ -62,7 +62,8 @@ which php &>/dev/null || ( echo "*** Can't locate php-cli" >&2 && quit 1 )
 # Create LTTng session
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
-lttng enable-event "$event_filter" -u --tracepoint >/dev/null || quit 1
+lttng enable-channel defchan -u -s "$lttng_session" --subbuf-size=268435456 >/dev/null || quit 1
+lttng enable-event "$event_filter" -c defchan -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run PHP
 cmd="env $ENV_ARGS php $scriptname"

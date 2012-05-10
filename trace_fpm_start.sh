@@ -64,7 +64,8 @@ killall --signal 9 php-fpm 2>/dev/null
 # Create LTTng session
 rm -rf "$tracepath" && mkdir -p "$tracepath" || quit 1
 lttng create --output "$tracepath" "$lttng_session" >/dev/null || quit 1
-lttng enable-event "$event_filter" -u --tracepoint >/dev/null || quit 1
+lttng enable-channel defchan -u -s "$lttng_session" --subbuf-size=268435456 >/dev/null || quit 1
+lttng enable-event "$event_filter" -c defchan -u --tracepoint >/dev/null || quit 1
 lttng start "$lttng_session" >/dev/null || quit 1
 # Run PHP
 cmd="env $ENV_ARGS php-fpm --fpm-config /etc/php5/fpm/php-fpm.conf"
