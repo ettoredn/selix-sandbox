@@ -98,28 +98,28 @@ if (!empty($_GET['bench']))
 
     $raw = $s->GetRawResults();
     $helloworld = $s->PlotBenchmark("helloworld", array(
-        "zend_compile_time",
-        "zend_execute_time",
+        "zend_compile",
+        "zend_execute",
     ));
     $compile = $s->PlotBenchmark("compile", array(
-        "zend_compile_time",
-        "zend_nested_compile_time",
+        "zend_first_compile",
+        "zend_compile",
     ));
     $function = $s->PlotBenchmark("function", array(
-        "zendvm_user_fcall_time",
-        "zendvm_internal_fcall_time",
+        "zendvm_user_fcall",
+        "zendvm_internal_fcall",
     ));
     $helloworldDelta = $s->PlotBenchmarkDelta("helloworld", array(
-        "zend_compile_time",
-        "zend_execute_time",
+        "zend_compile",
+        "zend_execute",
     ), "php");
     $compileDelta = $s->PlotBenchmarkDelta("compile", array(
-        "zend_compile_time",
-        "zend_nested_compile_time",
+        "zend_first_compile",
+        "zend_compile",
     ), "php");
     $functionDelta = $s->PlotBenchmarkDelta("function", array(
-        "zendvm_user_fcall_time",
-        "zendvm_internal_fcall_time",
+        "zendvm_user_fcall",
+        "zendvm_internal_fcall",
     ), "php");
 
     // Get verbose output produced

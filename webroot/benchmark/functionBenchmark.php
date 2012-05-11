@@ -70,8 +70,8 @@ class functionBenchmark extends Benchmark
         if (!($b instanceof functionBenchmark))
             throw new ErrorException('!($b instanceof functionBenchmark)');
 
-        $r['zendvm_internal_fcall_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMInternalFunctionCallTime");
-        $r['zendvm_user_fcall_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMUserFunctionCallTime");
+        $r['zendvm_internal_fcall'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMInternalFunctionCallTime");
+        $r['zendvm_user_fcall'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendVMUserFunctionCallTime");
 
         return $r;
     }

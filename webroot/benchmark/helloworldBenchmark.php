@@ -70,8 +70,8 @@ class helloworldBenchmark extends Benchmark
         if (!($b instanceof helloworldBenchmark))
             throw new ErrorException('!($b instanceof helloworldBenchmark)');
 
-        $r['zend_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
-        $r['zend_execute_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendExecuteTime");
+        $r['zend_compile'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
+        $r['zend_execute'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendExecuteTime");
 
         return $r;
     }

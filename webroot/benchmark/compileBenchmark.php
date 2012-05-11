@@ -70,22 +70,21 @@ class compileBenchmark extends Benchmark
         if (!($b instanceof compileBenchmark))
             throw new ErrorException('!($b instanceof compileBenchmark)');
 
-        $r['zend_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
-        $r['zend_nested_compile_time'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendNestedCompileTime");
+        $r['zend_first_compile'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendFirstCompileTime");
+        $r['zend_compile'] = $this->CalculateBenchmarkNumericDelta($b, "GetAverageZendCompileTime");
 
         return $r;
+    }
+
+    public function GetAverageZendFirstCompileTime()
+    {
+        return $this->GetAverageNumeric("GetZendFirstCompileTime");
     }
 
     public function GetAverageZendCompileTime()
     {
         return $this->GetAverageNumeric("GetZendCompileTime");
     }
-
-    public function GetAverageZendNestedCompileTime()
-    {
-        return $this->GetAverageNumeric("GetZendNestedCompileTime");
-    }
-    
 }
 
 ?>
