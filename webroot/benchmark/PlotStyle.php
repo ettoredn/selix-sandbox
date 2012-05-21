@@ -23,7 +23,7 @@ class ErrorHistogramPlotStyle extends PlotStyle
     public function GetRawCommands()
     {
         return '
-            set style histogram errorbars gap 2 lw 1
+            set style histogram errorbars gap 1 lw 1
             set style data histograms
             set style fill solid 0.4
             set bars 8

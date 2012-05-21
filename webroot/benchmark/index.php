@@ -3,6 +3,7 @@ require_once("Database.php");
 require_once("Session.php");
 $verbose = true;
 $verbose_maths = false;
+$disable_cache = false;
 ?>
 <!DOCTYPE html>
  <html>
@@ -106,6 +107,7 @@ if (!empty($_GET['bench']))
         "zend_compile",
     ));
     $function = $s->PlotBenchmark("function", array(
+//        "zendvm_first_user_fcall",
         "zendvm_user_fcall",
         "zendvm_internal_fcall",
     ));
@@ -118,6 +120,7 @@ if (!empty($_GET['bench']))
         "zend_compile",
     ), "php");
     $functionDelta = $s->PlotBenchmarkDelta("function", array(
+//        "zendvm_first_user_fcall",
         "zendvm_user_fcall",
         "zendvm_internal_fcall",
     ), "php");

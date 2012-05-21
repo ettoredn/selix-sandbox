@@ -1,8 +1,24 @@
 <?php
-function test( $arg )
-{ echo "test: $arg\n"; }
+define('LOOPS', 10);
+
+function first( $arg )
+{ return $arg ."\n"; }
+function test( $arg1, $arg2 )
+{ 
+	echo "test: $arg1 $arg2\n";
+	if ($arg1 == "dummy")
+		$realDummy = 4;
+	else
+		$realDummy = 203 + 42;
+	return $realDummy;
+}
+
 // user function call
-test( "Ciao" );
-// internal function call
-bcadd( "394.29394", "484.2949", 2 );
+first( "Hello" );
+for ($i=0; $i < 10; $i++)
+{
+	test( "Hello".$i, "World".$i );
+	// internal function call
+	bcadd( "394.29394", $i, 2 );
+}
 ?>

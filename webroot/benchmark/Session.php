@@ -213,6 +213,9 @@ class Session
         if (empty($config))
             throw new ErrorException('!empty($config)');
 
+        if ($GLOBALS['disable_cache'])
+            return null;
+
             $q = "SELECT data
               FROM ". Database::SESSION_CACHE_TABLE ."
               WHERE session=". $this->GetId() ."
@@ -236,6 +239,9 @@ class Session
     {
         if (empty($config) || empty($result))
             throw new ErrorException('!empty($config) || empty($result)');
+
+        if ($GLOBALS['disable_cache'])
+            return null;
 
         $serialized = serialize($result);
 
@@ -261,7 +267,7 @@ class Session
             $baseConf = $baseConfArg;
 
         // Check local cache
-        if (empty($this->results) || !array_key_exists($baseConf, $this->results) || empty($this->results[$baseConf]))
+        if (!is_array($this->results) || !array_key_exists($baseConf, $this->results) || !is_array($this->results[$baseConf]))
         {
             // Check database cache
             $this->results[$baseConf] = $this->GetCachedRawResult($baseConf);
@@ -370,7 +376,7 @@ class Session
         }
 
         // If already generated returns it
-        if (file_exists(Gnuplot::DATAPATH.$filename))
+        if (file_exists(Gnuplot::DATAPATH.$filename) && !$GLOBALS['disable_cache'])
             return Gnuplot::DATAPATH.$filename;
 
         $results = $this->GetRawResults();
@@ -438,7 +444,7 @@ class Session
         }
 
         // If already generated returns it
-        if (file_exists(Gnuplot::DATAPATH.$filename))
+        if (file_exists(Gnuplot::DATAPATH.$filename) && !$GLOBALS['disable_cache'])
             return Gnuplot::DATAPATH.$filename;
 
         $results = $this->GetRawResults($baseConf);

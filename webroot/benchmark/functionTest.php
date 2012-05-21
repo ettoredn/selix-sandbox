@@ -20,8 +20,10 @@ class functionTest extends Test
 				              'PHP_PHP:execute_primary_script_finish')
               ORDER BY timestamp ASC";
         $r = Database::GetConnection()->query($q);
-        if (!$r || $r->rowCount() != 6) throw new ErrorException("Query or data error: $q");
+        if (!$r || $r->rowCount() < 6) throw new ErrorException("Query or data error: $q");
 
+        $userCalls = array();
+        $internalCalls = array();
         while ($row = $r->fetch(PDO::FETCH_ASSOC))
         {
             $trace = new Tracepoint($row);
@@ -31,35 +33,74 @@ class functionTest extends Test
                     $this->SetTimeStart($trace->GetCPUTime());
                     break;
                 case 'PHP_Zend:vm_user_fcall_start':
-                    $userCallStartTime = $trace->GetCPUTime();
+                    if ($trace->GetArgumentString("name") == "first")
+                        $firstUserCallStartTime = $trace->GetCPUTime();
+                    else
+                        $userCallStartTime = $trace->GetCPUTime();
                     break;
                 case 'PHP_Zend:vm_user_fcall_finish':
-                    $userCallFinishTime = $trace->GetCPUTime();
+                    if ($trace->GetArgumentString("name") == "first")
+                    {
+                        $firstUserCallFinishTime = $trace->GetCPUTime();
 
-                    if (empty($userCallStartTime))
-                        throw new ErrorException('empty($userCallStartTime)');
-                    $delta = $userCallFinishTime - $userCallStartTime;
-                    if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_userFcallTime < 1\n";
+                        if (empty($firstUserCallStartTime))
+                            throw new ErrorException('empty($firstUserCallStartTime)');
+                        $delta = $firstUserCallFinishTime - $firstUserCallStartTime;
+                        if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_firstUserFcallTime < 1\n";
 
-                    $this->AddData("zendvm_userFcallTime", $delta);
+                        $this->AddData("zendvm_firstUserFcallTime", $delta);
 
-                    if ($GLOBALS['verbose'])
-                        echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zendvm_userFcallTime = ".$this->GetData("zendvm_userFcallTime")." }\n";
+                        if ($GLOBALS['verbose'])
+                            echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                    ", test = ".$this->GetName().", zendvm_firstUserFcallTime = ".$this->GetData("zendvm_firstUserFcallTime")." }\n";
+                    }
+                    else
+                    {
+                        $userCallFinishTime = $trace->GetCPUTime();
+
+                        if (empty($userCallStartTime))
+                            throw new ErrorException('empty($userCallStartTime)');
+                        $delta = $userCallFinishTime - $userCallStartTime;
+                        if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_userFcallTime < 1\n";
+
+                        $userCalls[] = $delta;
+
+                        if ($GLOBALS['verbose'])
+                            echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                    ", test = ".$this->GetName().", userCall = $delta }\n";
+                    }
                     break;
                 case 'PHP_Zend:vm_leave_nested':
-                    $vmLeaveNested = $trace->GetCPUTime();
+                    if ($trace->GetArgumentString("function_name") == "first")
+                    {
+                        $vmLeaveNested = $trace->GetCPUTime();
 
-                    if (empty($userCallStartTime))
-                        throw new ErrorException('empty($userCallStartTime)');
-                    $delta = $vmLeaveNested - $userCallStartTime;
-                    if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_userFcallTime < 1\n";
+                         if (empty($firstUserCallStartTime))
+                             throw new ErrorException('empty($firstUserCallStartTime)');
+                         $delta = $vmLeaveNested - $firstUserCallStartTime;
+                         if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_firstUserFcallTime < 1\n";
 
-                    $this->AddData("zendvm_userFcallTime", $delta);
+                         $this->AddData("zendvm_firstUserFcallTime", $delta);
 
-                    if ($GLOBALS['verbose'])
-                        echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zendvm_userFcallTime = ".$this->GetData("zendvm_userFcallTime")." }\n";
+                         if ($GLOBALS['verbose'])
+                             echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                     ", test = ".$this->GetName().", zendvm_firstUserFcallTime = ".$this->GetData("zendvm_firstUserFcallTime")." }\n";
+                    }
+                    else
+                    {
+                        $vmLeaveNested = $trace->GetCPUTime();
+
+                        if (empty($userCallStartTime))
+                            throw new ErrorException('empty($userCallStartTime)');
+                        $delta = $vmLeaveNested - $userCallStartTime;
+                        if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_userFcallTime < 1\n";
+
+                        $userCalls[] = $delta;
+
+                        if ($GLOBALS['verbose'])
+                            echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                    ", test = ".$this->GetName().", userCall = $delta }\n";
+                    }
                     break;
                 case 'PHP_Zend:vm_internal_fcall_start':
                     $internalCallStartTime = $trace->GetCPUTime();
@@ -72,21 +113,29 @@ class functionTest extends Test
                     $delta = $internalCallFinishTime - $internalCallStartTime;
                     if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_internalFcallTime < 1\n";
 
-                    $this->AddData("zendvm_internalFcallTime", $delta);
+                    $internalCalls[] = $delta;
 
                     if ($GLOBALS['verbose'])
                         echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", zendvm_internalFcallTime = ".$this->GetData("zendvm_internalFcallTime")." }\n";
+                                ", test = ".$this->GetName().", internalCall = $delta }\n";
                     break;
                 case 'PHP_PHP:execute_primary_script_finish':
                     $this->SetTimeFinish($trace->GetCPUTime());
                     break;
             }
         }
+
+        $avg = new AverageNumeric($userCalls);
+        $this->AddData("zendvm_userFcallTime", $avg->Median());
+        $avg = new AverageNumeric($internalCalls);
+        $this->AddData("zendvm_internalFcallTime", $avg->Median());
     }
 
     public function GetZendVMInternalFunctionCallTime()
     { return $this->GetData("zendvm_internalFcallTime"); }
+
+    public function GetZendVMFirstUserFunctionCallTime()
+    { return $this->GetData("zendvm_firstUserFcallTime"); }
 
     public function GetZendVMUserFunctionCallTime()
     { return $this->GetData("zendvm_userFcallTime"); }

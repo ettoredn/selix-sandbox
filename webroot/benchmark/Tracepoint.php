@@ -39,11 +39,25 @@ class Tracepoint
     { return $this->name; }
 
     public function GetCPUTime()
+    { return $this->GetArgument("cputime"); }
+
+    public function GetArgument( $name )
     {
-        $clever = explode(",", strstr($this->args, "cputime ="));
+        if (empty($name))
+            throw new ErrorException('empty($name)');
+
+        $str = strstr($this->args, "$name =");
+        if ($str === FALSE)
+            throw new ErrorException('$str === FALSE');
+        $clever = explode(",", $str);
 //        print_r( $clever );
         $clever = explode(" = ", $clever[0]);
 //        print_r( $clever[1] );
         return $clever[1];
+    }
+
+    public function GetArgumentString( $name )
+    {
+        return trim($this->GetArgument($name), '"');
     }
 }
