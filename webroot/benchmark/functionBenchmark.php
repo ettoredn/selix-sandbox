@@ -77,6 +77,11 @@ class functionBenchmark extends Benchmark
         return $r;
     }
 
+    public function GetAverageZendVMFirstInternalFunctionCallTime()
+    {
+        return $this->GetAverageNumeric("GetZendVMFirstInternalFunctionCallTime");
+    }
+
     public function GetAverageZendVMInternalFunctionCallTime()
     {
         return $this->GetAverageNumeric("GetZendVMInternalFunctionCallTime");

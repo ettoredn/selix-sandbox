@@ -1,4 +1,5 @@
 <?php
+// define() must be used at the beginning to identify first internal function call
 define('LOOPS', 10);
 
 function first( $arg )

@@ -103,21 +103,42 @@ class functionTest extends Test
                     }
                     break;
                 case 'PHP_Zend:vm_internal_fcall_start':
-                    $internalCallStartTime = $trace->GetCPUTime();
+                    if ($trace->GetArgumentString("name") == "define")
+                        $firstInternalCallStartTime = $trace->GetCPUTime();
+                    else
+                        $internalCallStartTime = $trace->GetCPUTime();
                     break;
                 case 'PHP_Zend:vm_internal_fcall_finish':
-                    $internalCallFinishTime = $trace->GetCPUTime();
+                    if ($trace->GetArgumentString("name") == "define")
+                    {
+                        $internalCallFinishTime = $trace->GetCPUTime();
 
-                    if (empty($internalCallStartTime))
-                        throw new ErrorException('empty($internalCallStartTime)');
-                    $delta = $internalCallFinishTime - $internalCallStartTime;
-                    if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_internalFcallTime < 1\n";
+                        if (empty($firstInternalCallStartTime))
+                            throw new ErrorException('empty($firstInternalCallStartTime)');
+                        $delta = $internalCallFinishTime - $firstInternalCallStartTime;
+                        if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_firstInternalFcallTime < 1\n";
 
-                    $internalCalls[] = $delta;
+                        $this->AddData("zendvm_firstInternalFcallTime", $delta);
 
-                    if ($GLOBALS['verbose'])
-                        echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
-                                ", test = ".$this->GetName().", internalCall = $delta }\n";
+                        if ($GLOBALS['verbose'])
+                            echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                    ", test = ".$this->GetName().", zendvm_firstInternalFcallTime = ".$this->GetData("zendvm_firstInternalFcallTime")." }\n";
+                    }
+                    else
+                    {
+                        $internalCallFinishTime = $trace->GetCPUTime();
+
+                        if (empty($internalCallStartTime))
+                            throw new ErrorException('empty($internalCallStartTime)');
+                        $delta = $internalCallFinishTime - $internalCallStartTime;
+                        if ($delta < 1) echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] WARNING: zendvm_internalFcallTime < 1\n";
+
+                        $internalCalls[] = $delta;
+
+                        if ($GLOBALS['verbose'])
+                            echo "[".$trace->GetSession()."/".$trace->GetConfiguration()."] { timestamp = ".$trace->GetTimestamp().
+                                    ", test = ".$this->GetName().", internalCall = $delta }\n";
+                    }
                     break;
                 case 'PHP_PHP:execute_primary_script_finish':
                     $this->SetTimeFinish($trace->GetCPUTime());
@@ -130,6 +151,9 @@ class functionTest extends Test
         $avg = new AverageNumeric($internalCalls);
         $this->AddData("zendvm_internalFcallTime", $avg->Median());
     }
+
+    public function GetZendVMFirstInternalFunctionCallTime()
+    { return $this->GetData("zendvm_firstInternalFcallTime"); }
 
     public function GetZendVMInternalFunctionCallTime()
     { return $this->GetData("zendvm_internalFcallTime"); }
