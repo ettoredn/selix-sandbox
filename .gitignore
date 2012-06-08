@@ -33,3 +33,6 @@ webroot/benchmark/data/
 
 # ionCube test script encoded which expires in 8 hours
 webroot/tests/ioncube_encoded.php
+
+# Link to selixperf performance viewer
+webroot/performance
